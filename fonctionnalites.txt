@@ -19,3 +19,4 @@
 
 - Bonus :
     - (RA avec unity)
+    - Import d'amis facebook pour l'échange
