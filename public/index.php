@@ -7,6 +7,9 @@ use Symfony\Component\HttpFoundation\Request;
 
 require __DIR__.'/../vendor/autoload.php';
 
+$_ENV['APP_ENV'] = 'prod';
+$_SERVER['APP_ENV'] = 'prod';
+
 // The check is to ensure we don't use .env in production
 if (!isset($_SERVER['APP_ENV']) && !isset($_ENV['APP_ENV'])) {
    var_dump(__DIR__.'/../.env');
