@@ -1,0 +1,26 @@
+Problèmes d'encodage
+
+MySQL : 
+
+VOIR ENCODAGE D'UNE DB :
+	SELECT default_character_set_name FROM information_schema.SCHEMATA S WHERE schema_name = "hearthstone_collector";
+	
+CHANGER ENCODAGE D'UNE DB POUR utf8 :
+	ALTER DATABASE hearthstone_collector CHARACTER SET utf8 COLLATE utf8_general_ci;
+
+LA BONNECONFIG DBAL DOCTRINE :
+
+doctrine:
+    dbal:
+        # configure these for your database server
+        dbname: hearthstone_collector
+        host: localhost
+        port: 3306
+        user: root
+        password: root
+        driver: pdo_mysql
+        server_version: '5.7'
+        charset: utf8
+        default_table_options:
+            charset: utf8
+            collate: utf8_general_ci
