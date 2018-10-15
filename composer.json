@@ -10,9 +10,6 @@
         "symfony/framework-bundle": "*",
         "symfony/yaml": "*"
     },
-    "require-dev": {
-        "symfony/dotenv": "*"
-    },
     "config": {
         "preferred-install": {
             "*": "dist"
