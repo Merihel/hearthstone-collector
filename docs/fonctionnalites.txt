@@ -1,4 +1,4 @@
-- Echanger les cartes (en ligne)
+- Echanger ou vendre ses cartes
 - Ma collection
     - Ajouter les cartes possédées (recherche par classe/fonction/race/type/rareté)
     - Filtrer par : celles que j’ai, toutes les cartes (griser celles que je n’ai pas)
@@ -19,3 +19,4 @@
 
 - Bonus :
     - (RA avec unity)
+    - Import d'amis facebook pour l'échange
