@@ -1,0 +1,21 @@
+- Echanger les cartes (en ligne)
+- Ma collection
+    - Ajouter les cartes possédées (recherche par classe/fonction/race/type/rareté)
+    - Filtrer par : celles que j’ai, toutes les cartes (griser celles que je n’ai pas)
+    - Trier par : nom, extension, date d’obtention, rareté, coût de carte
+- Monnaie pour acheter un deck de cartes (de l'extension choisie) ou une carte spécifique
+    - Questionnaire sur l’univers pour gagner des sous
+    - succès google play pour gagner des sous
+    - Lier son compte battle.net, et récupérer des sous en fonctions des succès gagnés (API battle.net)
+- DECKS
+    - Ajouter son deck et le partager
+    - Nom et description au deck
+    - Test de main
+    - Stats sur le deck : courbe de mana, type de cartes
+    - Ouvrir un deck acheté (+ animation)
+        - Partager sur : twitter pour envoyer un tweet avec le nom de la carte gagnée, facebook
+    - Voir les decks des autres, pouvoir commenter, l’importer, et voir les cartes qu’on a déjà et celles qui nous manquent 
+    (wishlist de cartes)
+
+- Bonus :
+    - (RA avec unity)
