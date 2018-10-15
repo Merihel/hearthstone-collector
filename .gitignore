@@ -6,3 +6,7 @@
 /vendor/
 ###< symfony/framework-bundle ###
 .DS_Store
+
+###> symfony/web-server-bundle ###
+/.web-server-pid
+###< symfony/web-server-bundle ###
