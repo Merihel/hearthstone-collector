@@ -10,6 +10,7 @@ require __DIR__.'/../vendor/autoload.php';
 $_ENV['APP_ENV'] = 'prod';
 $_SERVER['APP_ENV'] = 'prod';
 
+var_dump(__DIR__.'/../.env');
 // The check is to ensure we don't use .env in production
 if (!isset($_SERVER['APP_ENV']) && !isset($_ENV['APP_ENV'])) {
    var_dump(__DIR__.'/../.env');
@@ -21,6 +22,7 @@ if (!isset($_SERVER['APP_ENV']) && !isset($_ENV['APP_ENV'])) {
 
 $env = $_SERVER['APP_ENV'] ?? $_ENV['APP_ENV'] ?? 'dev';
 $debug = (bool) ($_SERVER['APP_DEBUG'] ?? $_ENV['APP_DEBUG'] ?? ('prod' !== $env));
+var_dump($env);
 
 if ($debug) {
     umask(0000);
