@@ -1,4 +1,4 @@
-Problèmes d'encodage
+﻿Problèmes d'encodage
 
 MySQL : 
 
@@ -24,3 +24,7 @@ doctrine:
         default_table_options:
             charset: utf8
             collate: utf8_general_ci
+
+COMMANDE POUR LANCER SERVEUR SYMFONY : php bin/console server:run --env=dev
+
+Si les commandes sont indisponibles, utiliser argument --env=dev
