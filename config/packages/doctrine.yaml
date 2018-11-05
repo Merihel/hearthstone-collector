@@ -9,10 +9,10 @@ doctrine:
     dbal:
         # configure these for your database server
         dbname: hearthstone_collector
-        host: localhost
+        host: 127.0.0.1
         port: 3306
         user: root
-        password: root
+        password: null
         driver: pdo_mysql
         server_version: '5.7'
         charset: utf8

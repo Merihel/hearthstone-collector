@@ -14,7 +14,7 @@ class CardController extends AbstractController
     /**
      * @Route("/card/{id}", name="card")
      */
-    public function getCardAction($id)
+    public function getCardAction($id, $isImg)
     {
         $card = $this->getDoctrine()
             ->getRepository(Card::class)
@@ -29,11 +29,12 @@ class CardController extends AbstractController
         $hearthstoneApiService = new HearthstoneApiService();
         $cardJson = $hearthstoneApiService->getCard($card->getHsId());
         
-        return new Response('Check out this great card : '.$cardJson[0]['name']);
+        
+        return $this->json($cardJson[0]);
     }
     
     /**
-     * @Route("/new-card")
+     * @Route("/card/new-card")
      */
     public function newCardAction(Request $request)
     {

@@ -6,6 +6,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface as Container;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Entity\User;
+use App\Entity\Card;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
 use Symfony\Component\HttpFoundation\Request;
@@ -51,7 +52,7 @@ class UserController extends AbstractController
     }
     
     /**
-     * @Route("/new-user")
+     * @Route("/user/new")
      */
     public function newUserAction(Request $request, Container $container)
     {
@@ -84,7 +85,7 @@ class UserController extends AbstractController
     }
     
     /**
-     * @Route("/update-user")
+     * @Route("/user/update")
      */
     public function updateUserAction(Request $request, Container $container)
     {
@@ -129,9 +130,56 @@ class UserController extends AbstractController
             return $this->json([
                 'state' => 'ERROR',
                 'message' => 'Erreur lors de la mise à jour',
-                'devMessage' => 'Error updating user with id '.$user->getId().': databse update error'
+                'devMessage' => 'Error updating user with id '.$user->getId().': database update error'
             ]);
         }
 
+    }
+
+    /**
+     * @Route("/user/set-card")
+     */
+    public function setCardToUserAction($id, Request $request, Container $container) {
+        $card = $this->getDoctrine()->getRepository(Card::class)->find(json_decode($request->request->get('json'))["cardId"]);
+        $user = $this->getDoctrine()->getRepository(User::class)->find($request->request->get('json')["id"]);
+        $em = $this->getDoctrine()->getManager();
+
+        if ($user && $card) {
+            $user->addCard($card);
+
+            try {
+                // tell Doctrine you want to (eventually) update the User (no queries yet)
+                $em->merge($user);
+            } catch (\Doctrine\ORM\EntityNotFoundException $e) {
+                return $this->json([
+                    'state' => 'ERROR',
+                    'message' => 'Utilisateur non trouvé',
+                    'devMessage' => 'Error updating user with id '.$user->getId().': user not found'
+                ]);
+            }
+
+            try {
+                // actually executes the queries (i.e. the INSERT query)
+                $em->flush();
+    
+                return $this->json([
+                    'state' => 'SUCCESS',
+                    'message' => 'Carte ajoutée à '.$user->getPseudo(),
+                    'id' => $user->getId(),
+                ]);
+            } catch (\Doctrine\ORM\ORMException $e) {
+                return $this->json([
+                    'state' => 'ERROR',
+                    'message' => 'Erreur lors de l\'ajout de la carte à l\'utilisateur',
+                    'devMessage' => 'Error updating user with id '.$user->getId().' to set card '.$card->getId().' : database update error'
+                ]);
+            }
+
+        } else {
+            return $this->json([
+                'state' => 'ERROR',
+                'message' => 'Utilisateur ou carte manquante',
+            ]);
+        }
     }
 }
