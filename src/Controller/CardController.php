@@ -30,7 +30,7 @@ class CardController extends AbstractController
         $hearthstoneApiService = new HearthstoneApiService();
         $cardJson = $hearthstoneApiService->getCard($card->getHsId());
         
-        return $this->json($cardJson);
+        return $this->json($cardJson[0]);
     }
     
     /**
