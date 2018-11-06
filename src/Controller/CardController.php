@@ -7,14 +7,15 @@ use Symfony\Component\Routing\Annotation\Route;
 use App\Entity\Card;
 use App\Service\HearthstoneApiService;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 
 class CardController extends AbstractController
 {
     /**
-     * @Route("/card/{id}", name="card")
+     * @Route("/card/select/{id}", name="card")
      */
-    public function getCardAction($id, $isImg)
+    public function getCardAction($id)
     {
         $card = $this->getDoctrine()
             ->getRepository(Card::class)
@@ -29,12 +30,11 @@ class CardController extends AbstractController
         $hearthstoneApiService = new HearthstoneApiService();
         $cardJson = $hearthstoneApiService->getCard($card->getHsId());
         
-        
-        return $this->json($cardJson[0]);
+        return $this->json($cardJson);
     }
     
     /**
-     * @Route("/card/new-card")
+     * @Route("/card/new")
      */
     public function newCardAction(Request $request)
     {

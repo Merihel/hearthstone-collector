@@ -3,6 +3,8 @@
 // src/Service/HearthstoneApiService.php
 namespace App\Service;
 
+use Symfony\Component\HttpFoundation\JsonResponse;
+
 class HearthstoneApiService
 {
     public function getCard($id)
@@ -26,7 +28,7 @@ class HearthstoneApiService
         //var_dump(json_decode($response, true));
         //Fermeture du cUrl (save de la ressource)
         curl_close($curl);
-        return json_decode($response, true);
+        return json_decode($response);
     }
 }
 

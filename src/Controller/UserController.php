@@ -7,6 +7,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Entity\User;
 use App\Entity\Card;
+use App\Service\HearthstoneApiService;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
 use Symfony\Component\HttpFoundation\Request;
@@ -15,7 +16,7 @@ use Symfony\Component\HttpFoundation\Request;
 class UserController extends AbstractController
 {   
     /**
-     * @Route("/user/{id}")
+     * @Route("/user/select/{id}")
      */
     public function getUserAction($id, Container $container)
     {
@@ -36,21 +37,39 @@ class UserController extends AbstractController
         } else {
             //Sinon je créé mon objet JSON via la fonction "serialize" de JMS, et l'envoie en front
             $jsonObject = $serializer->serialize($user, 'json');
-            return $this->json($jsonObject);
+            return $this->json(json_decode($jsonObject));
         }
     }
     
-    /**
-     * @Route("/user", name="user")
-     */
-    public function index()
-    {
-        return $this->json([
-            'message' => 'Welcome to your new controller!',
-            'path' => 'src/Controller/UserController.php',
-        ]);
-    }
     
+    /**
+     * @Route("/user/select-with-cards/{id}", name="user")
+     */
+    /*
+    public function selectWithCardsAction($id, Request $request, Container $container)
+    {
+        $serializer = $container->get('jms_serializer');
+        $hearthstoneApiService = new HearthstoneApiService();
+
+
+        $user = $this->getDoctrine()
+            ->getRepository(User::class)
+            ->find($id);
+
+        $userCards = $user->getCards();
+        $stringResp = "";
+        
+        foreach($userCards as $value) {
+            $hsCard = $hearthstoneApiService->getCard($value->getHsId());
+            $stringResp = $stringResp . "<img src='".$hsCard[0]->img."' />";
+        }
+        
+
+        //return $this->json(json_decode($hsCards));
+        return $this->json(json_decode((string) $userCards));
+    }
+    */
+
     /**
      * @Route("/user/new")
      */
@@ -84,6 +103,8 @@ class UserController extends AbstractController
         }
     }
     
+    //TODO REPARER LE UPDATE
+
     /**
      * @Route("/user/update")
      */
@@ -93,7 +114,7 @@ class UserController extends AbstractController
         // or you can add an argument to your action: index(EntityManagerInterface $entityManager)
         $em = $this->getDoctrine()->getManager();
         $serializer = $container->get('jms_serializer');
-        
+        $user = null;
         try {
             //Deserialize json from HTTP POST into a valid User object
             $user = $serializer->deserialize($request->request->get('json'), 'App\Entity\User', 'json');
@@ -139,9 +160,10 @@ class UserController extends AbstractController
     /**
      * @Route("/user/set-card")
      */
-    public function setCardToUserAction($id, Request $request, Container $container) {
-        $card = $this->getDoctrine()->getRepository(Card::class)->find(json_decode($request->request->get('json'))["cardId"]);
-        $user = $this->getDoctrine()->getRepository(User::class)->find($request->request->get('json')["id"]);
+    public function setCardToUserAction(Request $request, Container $container) {
+        $json = json_decode($request->request->get('json'), true);
+        $card = $this->getDoctrine()->getRepository(Card::class)->find($json["cardId"]);
+        $user = $this->getDoctrine()->getRepository(User::class)->find($json["id"]);
         $em = $this->getDoctrine()->getManager();
 
         if ($user && $card) {
@@ -164,7 +186,7 @@ class UserController extends AbstractController
     
                 return $this->json([
                     'state' => 'SUCCESS',
-                    'message' => 'Carte ajoutée à '.$user->getPseudo(),
+                    'message' => 'Carte ajoutee a '.$user->getPseudo(),
                     'id' => $user->getId(),
                 ]);
             } catch (\Doctrine\ORM\ORMException $e) {
