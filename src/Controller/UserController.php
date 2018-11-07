@@ -5,6 +5,7 @@ namespace App\Controller;
 use Symfony\Component\DependencyInjection\ContainerInterface as Container;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Routing\Annotation\Route;
+use Psr\Log\LoggerInterface;
 use App\Entity\User;
 use App\Entity\Card;
 use App\Service\HearthstoneApiService;
@@ -73,14 +74,18 @@ class UserController extends AbstractController
     /**
      * @Route("/user/new")
      */
-    public function newUserAction(Request $request, Container $container)
+    public function newUserAction(Request $request, Container $container, LoggerInterface $logger)
     {
-
+        $logger->info('REQUEST JSON: '.$request->getContent());
         $em = $this->getDoctrine()->getManager();
         $serializer = $container->get('jms_serializer');
         //Deserialize json from HTTP POST into a valid User object
-        $user = $serializer->deserialize($request->request->get('json'), 'App\Entity\User', 'json');
+        $user = $serializer->deserialize($request->getContent(), 'App\Entity\User', 'json');
         
+        if($user->getCoins() == null || $user->getCoins() == 0) {
+            $user->setCoins(75); 
+        }
+
         // tell Doctrine you want to (eventually) save the User (no queries yet)
         $em->persist($user);
 
@@ -89,15 +94,14 @@ class UserController extends AbstractController
             $em->flush();
             
             return $this->json([
-                'state' => 'SUCCESS',
-                'message' => 'Utilisateur enregistré',
-                'id' => $user->getId(),
+                'status' => 'SUCCESS',
+                'message' => 'Utilisateur '.$user->getId().' enregistré',
+                'devMessage' => "Success : nothing to show here",
             ]);
         } catch (Exception $e) {
             return $this->json([
-                'state' => 'ERROR',
-                'message' => 'Erreur lors de l\'enregistrement de l\'utilisateur',
-                'id' => $user->getId(),
+                'status' => 'ERROR',
+                'message' => 'Erreur lors de l\'enregistrement de l\'utilisateur '.$user->getId(),
                 'devMessage' => $e->getMessage(),
             ]);
         }
@@ -121,7 +125,7 @@ class UserController extends AbstractController
 
         } catch (\JMS\Serializer\Exception\RuntimeException $e) {
             return $this->json([
-                'state' => 'ERROR',
+                'status' => 'ERROR',
                 'message' => 'Erreur lors de l\'envoi des données',
                 'devMessage' => 'Error deserializing JSON: '.$request->request->get('json'),
             ]);
@@ -132,7 +136,7 @@ class UserController extends AbstractController
             $em->merge($user);
         } catch (\Doctrine\ORM\EntityNotFoundException $e) {
             return $this->json([
-                'state' => 'ERROR',
+                'status' => 'ERROR',
                 'message' => 'Utilisateur non trouvé',
                 'devMessage' => 'Error updating user with id '.$user->getId().': user not found'
             ]);
@@ -143,9 +147,9 @@ class UserController extends AbstractController
             $em->flush();
 
             return $this->json([
-                'state' => 'SUCCESS',
+                'status' => 'SUCCESS',
                 'message' => 'Utilisateur mis à jour !',
-                'id' => $user->getId(),
+                'devMessage' => "Success : nothing to show here",
             ]);
         } catch (\Doctrine\ORM\ORMException $e) {
             return $this->json([
@@ -174,7 +178,7 @@ class UserController extends AbstractController
                 $em->merge($user);
             } catch (\Doctrine\ORM\EntityNotFoundException $e) {
                 return $this->json([
-                    'state' => 'ERROR',
+                    'status' => 'ERROR',
                     'message' => 'Utilisateur non trouvé',
                     'devMessage' => 'Error updating user with id '.$user->getId().': user not found'
                 ]);
@@ -185,13 +189,13 @@ class UserController extends AbstractController
                 $em->flush();
     
                 return $this->json([
-                    'state' => 'SUCCESS',
+                    'status' => 'SUCCESS',
                     'message' => 'Carte ajoutee a '.$user->getPseudo(),
-                    'id' => $user->getId(),
+                    'devMessage' => "Success : nothing to show here",
                 ]);
             } catch (\Doctrine\ORM\ORMException $e) {
                 return $this->json([
-                    'state' => 'ERROR',
+                    'status' => 'ERROR',
                     'message' => 'Erreur lors de l\'ajout de la carte à l\'utilisateur',
                     'devMessage' => 'Error updating user with id '.$user->getId().' to set card '.$card->getId().' : database update error'
                 ]);
@@ -199,8 +203,9 @@ class UserController extends AbstractController
 
         } else {
             return $this->json([
-                'state' => 'ERROR',
+                'status' => 'ERROR',
                 'message' => 'Utilisateur ou carte manquante',
+                'devMessage' => 'Error while getting User/Card > missing one or both',
             ]);
         }
     }

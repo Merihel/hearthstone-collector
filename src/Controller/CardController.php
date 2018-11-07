@@ -54,6 +54,7 @@ class CardController extends AbstractController
         return $this->json([
             'message' => 'Successfully saved card',
             'id' => $card->getId(),
+            'devMessage' => "Success : nothing to show here",
         ]);
     }
 }

@@ -5,6 +5,8 @@ namespace App\Entity;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use JMS\Serializer\Annotation as Serializer;
+use JMS\Serializer\Annotation\SerializedName as SerializedName;
 
 /**
  * @ORM\Entity(repositoryClass="App\Repository\UserRepository")
@@ -20,26 +22,33 @@ class User
 
     /**
      * @ORM\Column(type="string", length=255)
+     * @Serializer\Expose
      */
     private $pseudo;
 
     /**
      * @ORM\Column(type="string", length=255, nullable=true)
+     * @Serializer\Expose
+     * @SerializedName("firstName")
      */
     private $firstName;
 
     /**
      * @ORM\Column(type="string", length=255, nullable=true)
+     * @Serializer\Expose
+     * @SerializedName("lastName")
      */
     private $lastName;
 
     /**
      * @ORM\Column(type="string", length=255)
+     * @Serializer\Expose
      */
     private $mail;
 
     /**
      * @ORM\Column(type="integer")
+     * @Serializer\Expose
      */
     private $coins;
 
@@ -72,11 +81,15 @@ class User
 
     /**
      * @ORM\Column(type="string", length=255, nullable=true)
+     * @Serializer\Expose
+     * @SerializedName("facebookId")
      */
     private $facebookId;
 
     /**
      * @ORM\Column(type="string", length=255, nullable=true)
+     * @Serializer\Expose
+     * @SerializedName("googleId")
      */
     private $googleId;
 

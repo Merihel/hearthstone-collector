@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use JMS\Serializer\Annotation\SerializedName as SerializedName;
 
 /**
  * @ORM\Entity(repositoryClass="App\Repository\CardRepository")
@@ -18,6 +19,7 @@ class Card
 
     /**
      * @ORM\Column(type="string", length=255)
+     * @SerializedName("hsId")
      */
     private $hsId;
 
