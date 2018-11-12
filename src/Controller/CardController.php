@@ -3,8 +3,10 @@
 namespace App\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\ContainerInterface as Container;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Entity\Card;
+use Psr\Log\LoggerInterface;
 use App\Service\HearthstoneApiService;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -31,6 +33,35 @@ class CardController extends AbstractController
         $cardJson = $hearthstoneApiService->getCard($card->getHsId());
         
         return $this->json($cardJson[0]);
+    }
+    
+    /*
+    * 24 cartes = 30 secondes d'appel API ! Il faut changer et enegistrer les cartes sur l'app....
+    */
+    
+    /**
+     * @Route("/card/select-list")
+     */
+    public function getCardListAction(Request $request, LoggerInterface $logger) 
+    {
+        $logger->info('REQUEST JSON: '.$request->request->get("json"));
+        $json = json_decode($request->request->get("json"), true);
+        $jsonValues = $json["json"];
+        $hearthstoneApiService = new HearthstoneApiService();
+        /*
+        echo '<pre>'; 
+        var_dump($json); 
+        echo '</pre>';
+        */
+        $imgArray = [];
+        $html = "";
+        for ($i=0; $i<count($jsonValues); $i++) {
+            $hsId = $jsonValues[$i]["hsId"];
+            $card = $hearthstoneApiService->getCard($hsId);
+            array_push($imgArray, $card[0]->img);
+            $html = $html . "<img src='".$imgArray[$i]."'><br>";
+        }
+        return new Response($html);
     }
     
     /**
