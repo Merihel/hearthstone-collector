@@ -49,18 +49,19 @@ class CardController extends AbstractController
         $json = json_decode($request->request->get("json"), true);
         $jsonValues = $json["json"];
         $hearthstoneApiService = new HearthstoneApiService();
+        
         /*
         echo '<pre>'; 
         var_dump($json); 
         echo '</pre>';
         */
+        
         $imgArray = [];
         $html = "";
         for ($i=0; $i<count($jsonValues); $i++) {
             $hsId = $jsonValues[$i]["hsId"];
             $card = $hearthstoneApiService->getCard($hsId);
-            array_push($imgArray, $card[0]->img);
-            $html = $html . "<img src='".$imgArray[$i]."'><br>";
+            $html = $html . "<img src='".$card[0]->img."'><br>";
         }
         return new Response($html);
     }
@@ -71,7 +72,7 @@ class CardController extends AbstractController
     public function getCardsByUser($id, Container $container)
     {
         $serializer = $container->get('jms_serializer');
-        
+
         $user = $this->getDoctrine()
             ->getRepository(User::class)
             ->find($id);
@@ -85,6 +86,21 @@ class CardController extends AbstractController
         return $this->json(json_decode($serializer->serialize($user->getCards(), 'json')));
     }
     
+    //Get un array avec tous les HS ids de cartes en base
+    public function getAllCardHsIds() {
+        $card = $this->getDoctrine()
+        ->getRepository(Card::class)
+        ->findAll();
+
+        $cardIds = array();
+
+        for ($i=0; $i < count($card); $i++) {
+            array_push($cardIds, $card[$i]->getHsId()); //1 est l'emplacement du HS id
+        }
+
+        return $cardIds;
+    }
+
     /**
      * @Route("/card/import/{hsId}")
      **/
@@ -94,40 +110,52 @@ class CardController extends AbstractController
         $hearthstoneApiService = new HearthstoneApiService();
         $cardJson = $hearthstoneApiService->getCard($hsId);
 
-        
-        // $cardJson[0]->img
-        $newCard = new Card();
-        
-        $newCard->setHsId($cardJson[0]->cardId);
-        $newCard->setCost(isset($cardJson[0]->cost) ? $cardJson[0]->cost * 15 : 50);
-        $newCard->setName(isset($cardJson[0]->name) ? $cardJson[0]->name : "");
-        $newCard->setCardSet(isset($cardJson[0]->cardSet) ? $cardJson[0]->cardSet : "");
-        $newCard->setType(isset($cardJson[0]->type) ? $cardJson[0]->type : "");
-        $newCard->setFaction(isset($cardJson[0]->faction) ? $cardJson[0]->faction : "");
-        $newCard->setRarity(isset($cardJson[0]->rarity) ? $cardJson[0]->rarity : "");
-        $newCard->setText(isset($cardJson[0]->text) ? $cardJson[0]->text : "");
-        $newCard->setFlavor(isset($cardJson[0]->flavor) ? $cardJson[0]->flavor : "");
-        $newCard->setImg(isset($cardJson[0]->img) ? $cardJson[0]->img : "");
-        $newCard->setImgGold(isset($cardJson[0]->imgGold) ? $cardJson[0]->imgGold : "");
-        
-        $em->persist($newCard);
-        
-        try {
-            // actually executes the queries (i.e. the INSERT query)
-            $em->flush();
-            
-            return $this->json([
-                'status' => 'SUCCESS',
-                'message' => 'Carte '.$newCard->getHsId().' enregistrée',
-                'devMessage' => "Success : nothing to show here",
-            ]);
-        } catch (Exception $e) {
+        $cardArray = $this->getAllCardHsIds();
+
+        if (in_array($cardJson[0]->cardId, $cardArray)) {
             return $this->json([
                 'status' => 'ERROR',
-                'message' => 'Erreur lors de l\'enregistrement de la carte '.$newCard->getHsId(),
-                'devMessage' => $e->getMessage(),
+                'message' => 'Erreur lors de l\'enregistrement de la carte '.$cardJson[0]->cardId." - Cette carte existe déjà",
+                'devMessage' => 'Already Exist',
             ]);
+        } else {
+            // $cardJson[0]->img
+            $newCard = new Card();
+            
+            $newCard->setHsId($cardJson[0]->cardId);
+            $newCard->setCost(isset($cardJson[0]->cost) ? $cardJson[0]->cost * 15 : 50);
+            $newCard->setName(isset($cardJson[0]->name) ? $cardJson[0]->name : "");
+            $newCard->setCardSet(isset($cardJson[0]->cardSet) ? $cardJson[0]->cardSet : "");
+            $newCard->setType(isset($cardJson[0]->type) ? $cardJson[0]->type : "");
+            $newCard->setFaction(isset($cardJson[0]->faction) ? $cardJson[0]->faction : "");
+            $newCard->setRarity(isset($cardJson[0]->rarity) ? $cardJson[0]->rarity : "");
+            $newCard->setText(isset($cardJson[0]->text) ? $cardJson[0]->text : "");
+            $newCard->setFlavor(isset($cardJson[0]->flavor) ? $cardJson[0]->flavor : "");
+            $newCard->setImg(isset($cardJson[0]->img) ? $cardJson[0]->img : "");
+            $newCard->setImgGold(isset($cardJson[0]->imgGold) ? $cardJson[0]->imgGold : "");
+            
+            $em->persist($newCard);
+            
+            try {
+                // actually executes the queries (i.e. the INSERT query)
+                $em->flush();
+                
+                return $this->json([
+                    'status' => 'SUCCESS',
+                    'message' => 'Carte '.$newCard->getHsId().' enregistrée',
+                    'devMessage' => "Success : nothing to show here",
+                ]);
+            } catch (Exception $e) {
+                return $this->json([
+                    'status' => 'ERROR',
+                    'message' => 'Erreur lors de l\'enregistrement de la carte '.$newCard->getHsId(),
+                    'devMessage' => $e->getMessage(),
+                ]);
+            }
         }
+
+
+        
     }
     
     /**
