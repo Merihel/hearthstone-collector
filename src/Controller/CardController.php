@@ -68,7 +68,10 @@ class CardController extends AbstractController
     /**
      * @Route("/card/select-by-user/{id}")
      */
-    public function getCardsByUser($id, Container $container) {
+    public function getCardsByUser($id, Container $container)
+    {
+        $serializer = $container->get('jms_serializer');
+        
         $user = $this->getDoctrine()
             ->getRepository(User::class)
             ->find($id);
@@ -79,13 +82,7 @@ class CardController extends AbstractController
             );
         }
         
-        echo $user->getCards()[0]->getId();
-        
-        return $this->json([
-            'message' => 'Successfully got cards',
-            'id' => $user->getId(),
-            'devMessage' => "Success : nothing to show here",
-        ]);
+        return $this->json(json_decode($serializer->serialize($user->getCards(), 'json')));
     }
     
     /**
