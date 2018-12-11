@@ -8,6 +8,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use Psr\Log\LoggerInterface;
 use App\Entity\User;
 use App\Entity\Card;
+use App\Entity\Deck;
 use App\Service\HearthstoneApiService;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
@@ -15,7 +16,7 @@ use Symfony\Component\HttpFoundation\Request;
 
 
 class UserController extends AbstractController
-{   
+{
     /**
      * @Route("/user/select/{id}")
      */
@@ -24,12 +25,12 @@ class UserController extends AbstractController
         //Container possède les services, not celui de JMS
         //Je créé un objet JMSSerializer pour la sérialisation/déserialisation
         $serializer = $container->get('jms_serializer');
-        
+
         //Je déclare un objet User que je récupère grâce au manager de Doctrine, qui utilise le repository de mon User
         $user = $this->getDoctrine()
             ->getRepository(User::class)
             ->find($id);
-        
+
         //Si je n'ai pas d'user, je lève une exception
         if (!$user) {
             throw $this->createNotFoundException(
@@ -41,8 +42,8 @@ class UserController extends AbstractController
             return $this->json(json_decode($jsonObject));
         }
     }
-    
-    
+
+
     /**
      * @Route("/user/select-with-cards/{id}", name="user")
      */
@@ -59,12 +60,12 @@ class UserController extends AbstractController
 
         $userCards = $user->getCards();
         $stringResp = "";
-        
+
         foreach($userCards as $value) {
             $hsCard = $hearthstoneApiService->getCard($value->getHsId());
             $stringResp = $stringResp . "<img src='".$hsCard[0]->img."' />";
         }
-        
+
 
         //return $this->json(json_decode($hsCards));
         return $this->json(json_decode((string) $userCards));
@@ -81,9 +82,9 @@ class UserController extends AbstractController
         $serializer = $container->get('jms_serializer');
         //Deserialize json from HTTP POST into a valid User object
         $user = $serializer->deserialize($request->getContent(), 'App\Entity\User', 'json');
-        
+
         if($user->getCoins() == null || $user->getCoins() == 0) {
-            $user->setCoins(75); 
+            $user->setCoins(75);
         }
 
         // tell Doctrine you want to (eventually) save the User (no queries yet)
@@ -92,7 +93,7 @@ class UserController extends AbstractController
         try {
             // actually executes the queries (i.e. the INSERT query)
             $em->flush();
-            
+
             return $this->json([
                 'status' => 'SUCCESS',
                 'message' => 'Utilisateur '.$user->getId().' enregistré',
@@ -106,7 +107,7 @@ class UserController extends AbstractController
             ]);
         }
     }
-    
+
     //TODO REPARER LE UPDATE
 
     /**
@@ -130,7 +131,7 @@ class UserController extends AbstractController
                 'devMessage' => 'Error deserializing JSON: '.$request->request->get('json'),
             ]);
         }
-        
+
         try {
             // tell Doctrine you want to (eventually) update the User (no queries yet)
             $em->merge($user);
@@ -141,7 +142,7 @@ class UserController extends AbstractController
                 'devMessage' => 'Error updating user with id '.$user->getId().': user not found'
             ]);
         }
-        
+
         try {
             // actually executes the queries (i.e. the INSERT query)
             $em->flush();
@@ -187,7 +188,7 @@ class UserController extends AbstractController
             try {
                 // actually executes the queries (i.e. the INSERT query)
                 $em->flush();
-    
+
                 return $this->json([
                     'status' => 'SUCCESS',
                     'message' => 'Carte ajoutee a '.$user->getPseudo(),
@@ -206,6 +207,56 @@ class UserController extends AbstractController
                 'status' => 'ERROR',
                 'message' => 'Utilisateur ou carte manquante',
                 'devMessage' => 'Error while getting User/Card > missing one or both',
+            ]);
+        }
+    }
+
+
+    /**
+     * @Route("/user/set-deck")
+     */
+    public function setDeckToUserAction(Request $request, Container $container) {
+        $json = json_decode($request->request->get('json'), true);
+        $deck = $this->getDoctrine()->getRepository(Deck::class)->find($json["deckId"]);
+        $user = $this->getDoctrine()->getRepository(User::class)->find($json["id"]);
+        $em = $this->getDoctrine()->getManager();
+
+        if ($user && $deck) {
+            $user->addDeck($deck);
+
+            try {
+                // tell Doctrine you want to (eventually) update the User (no queries yet)
+                $em->merge($user);
+            } catch (\Doctrine\ORM\EntityNotFoundException $e) {
+                return $this->json([
+                    'status' => 'ERROR',
+                    'message' => 'Utilisateur non trouvé',
+                    'devMessage' => 'Error updating user with id '.$user->getId().': user not found'
+                ]);
+            }
+
+            try {
+                // actually executes the queries (i.e. the INSERT query)
+                $em->flush();
+
+                return $this->json([
+                    'status' => 'SUCCESS',
+                    'message' => 'Deck ajoute a '.$user->getPseudo(),
+                    'devMessage' => "Success : nothing to show here",
+                ]);
+            } catch (\Doctrine\ORM\ORMException $e) {
+                return $this->json([
+                    'status' => 'ERROR',
+                    'message' => 'Erreur lors de l\'ajout du deck à l\'utilisateur',
+                    'devMessage' => 'Error updating user with id '.$user->getId().' to set deck '.$deck->getId().' : database update error'
+                ]);
+            }
+
+        } else {
+            return $this->json([
+                'status' => 'ERROR',
+                'message' => 'Utilisateur ou deck manquant',
+                'devMessage' => 'Error while getting User/Deck > missing one or both',
             ]);
         }
     }
