@@ -12,7 +12,7 @@ use App\Service\HearthstoneApiService;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
 use Symfony\Component\HttpFoundation\Request;
-
+use JMS\Serializer\SerializationContext;
 
 class UserController extends AbstractController
 {   
@@ -46,7 +46,6 @@ class UserController extends AbstractController
     /**
      * @Route("/user/select-with-cards/{id}", name="user")
      */
-    /*
     public function selectWithCardsAction($id, Request $request, Container $container)
     {
         $serializer = $container->get('jms_serializer');
@@ -61,15 +60,49 @@ class UserController extends AbstractController
         $stringResp = "";
         
         foreach($userCards as $value) {
-            $hsCard = $hearthstoneApiService->getCard($value->getHsId());
-            $stringResp = $stringResp . "<img src='".$hsCard[0]->img."' />";
+            $stringResp = $stringResp . "<img src='".$value->getImgGold()."' />";
         }
         
-
         //return $this->json(json_decode($hsCards));
-        return $this->json(json_decode((string) $userCards));
+        return new Response($stringResp);
     }
-    */
+    
+    /**
+     * @Route("/user/checkMail/{mail}")
+     */
+    public function checkUserMailAction($mail, Request $request, Container $container)
+    {
+
+        $serializer = $container->get('jms_serializer');
+
+        $user = $this->getDoctrine()
+            ->getRepository(User::class)
+            ->findBy(array('mail' => $mail));
+
+        if ($user == null) {
+            return $this->json([
+                'status' => 'ERROR',
+                'message' => 'Cet email est inconnu',
+                'devMessage' => 'UNKNOWN_EMAIL',
+            ]);
+        } else {
+            return $this->json([
+                'status' => 'SUCCESS',
+                'message' => 'Cet email existe déjà',
+                'devMessage' => 'Success : nothing to show here',
+            ]);
+        }
+
+        return $this->json(json_decode($jsonObject));
+    }
+
+    /**
+     * @Route("/user/checkPseudo/{pseudo}")
+     */
+    public function checkSocialIdAction($pseudo)
+    {
+
+    }
 
     /**
      * @Route("/user/new")
@@ -106,8 +139,8 @@ class UserController extends AbstractController
             ]);
         }
     }
-    
-    //TODO REPARER LE UPDATE
+
+    //Attention sur le update : les champs manquant seront null ou vides dans la base de données !
 
     /**
      * @Route("/user/update")
@@ -118,11 +151,11 @@ class UserController extends AbstractController
         // or you can add an argument to your action: index(EntityManagerInterface $entityManager)
         $em = $this->getDoctrine()->getManager();
         $serializer = $container->get('jms_serializer');
+
         $user = null;
         try {
             //Deserialize json from HTTP POST into a valid User object
             $user = $serializer->deserialize($request->request->get('json'), 'App\Entity\User', 'json');
-
         } catch (\JMS\Serializer\Exception\RuntimeException $e) {
             return $this->json([
                 'status' => 'ERROR',
@@ -130,10 +163,10 @@ class UserController extends AbstractController
                 'devMessage' => 'Error deserializing JSON: '.$request->request->get('json'),
             ]);
         }
-        
+  
         try {
-            // tell Doctrine you want to (eventually) update the User (no queries yet)
-            $em->merge($user);
+            // tell Doctrine you want to (eventually) update the User (no queries yet). The user null fields are stripped
+            $em->merge($users);
         } catch (\Doctrine\ORM\EntityNotFoundException $e) {
             return $this->json([
                 'status' => 'ERROR',
