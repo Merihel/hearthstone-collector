@@ -43,7 +43,6 @@ class UserController extends AbstractController
         }
     }
 
-
     /**
      * @Route("/user/select-with-cards/{id}", name="user")
      */
@@ -68,29 +67,50 @@ class UserController extends AbstractController
         //return $this->json(json_decode($hsCards));
         return new Response($stringResp);
     }
-    
+
     /**
-     * @Route("/user/checkMail/{mail}")
+     * @Route("/user/check-mail/{mail}")
      */
-    public function checkUserMailAction($mail, Request $request, Container $container)
+    public function checkUserMailAction($mail)
     {
-
-        $serializer = $container->get('jms_serializer');
-
         $user = $this->getDoctrine()
             ->getRepository(User::class)
             ->findBy(array('mail' => $mail));
 
         if ($user == null) {
             return $this->json([
-                'status' => 'ERROR',
+                'exit_code' => 1,
                 'message' => 'Cet email est inconnu',
                 'devMessage' => 'UNKNOWN_EMAIL',
             ]);
         } else {
             return $this->json([
-                'status' => 'SUCCESS',
+                'exit_code' => 0,
                 'message' => 'Cet email existe déjà',
+                'devMessage' => 'Success : nothing to show here',
+            ]);
+        }
+    }
+
+    /**
+     * @Route("/user/check-pseudo/{pseudo}")
+     */
+    public function checkUserPseudoAction($pseudo)
+    {
+        $user = $this->getDoctrine()
+            ->getRepository(User::class)
+            ->findBy(array('pseudo' => $pseudo));
+
+        if ($user == null) {
+            return $this->json([
+                'exit_code' => 1,
+                'message' => 'Ce pseudo est inconnu',
+                'devMessage' => 'UNKNOWN_USERNAME',
+            ]);
+        } else {
+            return $this->json([
+                'exit_code' => 0,
+                'message' => 'Ce pseudo existe déjà',
                 'devMessage' => 'Success : nothing to show here',
             ]);
         }
@@ -99,12 +119,28 @@ class UserController extends AbstractController
     }
 
     /**
-     * @Route("/user/checkPseudo/{pseudo}")
+     * @Route("/user/sync")
      */
-    public function checkSocialIdAction($pseudo)
+    public function synchronizeUserAction(Request $request, Container $container)
     {
-
-    }
+        $mail = $request->request->get('mail');
+        var_dump($mail);
+        $jsonStr = $this->checkUserMailAction($mail);
+        echo "<pre>";
+        var_dump(json_decode($jsonStr));
+        echo "</pre>";
+        if(json_decode($this->checkUserMailAction($mail))["exit_code"] == 1) {
+            return $this->json([
+                'exit_code' => 1,
+                'message' => 'User with mail '.$mail. 'not found'
+            ]);
+        } else {
+            return $this->json([
+                'exit_code' => 0,
+                'message' => 'User with mail '.$mail.' found',
+            ]);
+        }
+    }   
 
     /**
      * @Route("/user/new")
@@ -129,13 +165,13 @@ class UserController extends AbstractController
             $em->flush();
 
             return $this->json([
-                'status' => 'SUCCESS',
+                'exit_code' => 0,
                 'message' => 'Utilisateur '.$user->getId().' enregistré',
                 'devMessage' => "Success : nothing to show here",
             ]);
         } catch (Exception $e) {
             return $this->json([
-                'status' => 'ERROR',
+                'exit_code' => 1,
                 'message' => 'Erreur lors de l\'enregistrement de l\'utilisateur '.$user->getId(),
                 'devMessage' => $e->getMessage(),
             ]);
@@ -162,7 +198,7 @@ class UserController extends AbstractController
             $user = $serializer->deserialize($request->request->get('json'), 'App\Entity\User', 'json');
         } catch (\JMS\Serializer\Exception\RuntimeException $e) {
             return $this->json([
-                'status' => 'ERROR',
+                'exit_code' => 1,
                 'message' => 'Erreur lors de l\'envoi des données',
                 'devMessage' => 'Error deserializing JSON: '.$request->request->get('json'),
             ]);
@@ -173,7 +209,7 @@ class UserController extends AbstractController
             $em->merge($users);
         } catch (\Doctrine\ORM\EntityNotFoundException $e) {
             return $this->json([
-                'status' => 'ERROR',
+                'exit_code' => 1,
                 'message' => 'Utilisateur non trouvé',
                 'devMessage' => 'Error updating user with id '.$user->getId().': user not found'
             ]);
@@ -184,13 +220,13 @@ class UserController extends AbstractController
             $em->flush();
 
             return $this->json([
-                'status' => 'SUCCESS',
+                'exit_code' => 0,
                 'message' => 'Utilisateur mis à jour !',
                 'devMessage' => "Success : nothing to show here",
             ]);
         } catch (\Doctrine\ORM\ORMException $e) {
             return $this->json([
-                'state' => 'ERROR',
+                'exit_code' => 1,
                 'message' => 'Erreur lors de la mise à jour',
                 'devMessage' => 'Error updating user with id '.$user->getId().': database update error'
             ]);
@@ -215,7 +251,7 @@ class UserController extends AbstractController
                 $em->merge($user);
             } catch (\Doctrine\ORM\EntityNotFoundException $e) {
                 return $this->json([
-                    'status' => 'ERROR',
+                    'exit_code' => 1,
                     'message' => 'Utilisateur non trouvé',
                     'devMessage' => 'Error updating user with id '.$user->getId().': user not found'
                 ]);
@@ -226,13 +262,13 @@ class UserController extends AbstractController
                 $em->flush();
 
                 return $this->json([
-                    'status' => 'SUCCESS',
+                    'exit_code' => 0,
                     'message' => 'Carte ajoutee a '.$user->getPseudo(),
                     'devMessage' => "Success : nothing to show here",
                 ]);
             } catch (\Doctrine\ORM\ORMException $e) {
                 return $this->json([
-                    'status' => 'ERROR',
+                    'exit_code' => 1,
                     'message' => 'Erreur lors de l\'ajout de la carte à l\'utilisateur',
                     'devMessage' => 'Error updating user with id '.$user->getId().' to set card '.$card->getId().' : database update error'
                 ]);
@@ -240,7 +276,7 @@ class UserController extends AbstractController
 
         } else {
             return $this->json([
-                'status' => 'ERROR',
+                'exit_code' => 1,
                 'message' => 'Utilisateur ou carte manquante',
                 'devMessage' => 'Error while getting User/Card > missing one or both',
             ]);
@@ -265,7 +301,7 @@ class UserController extends AbstractController
                 $em->merge($user);
             } catch (\Doctrine\ORM\EntityNotFoundException $e) {
                 return $this->json([
-                    'status' => 'ERROR',
+                    'exit_code' => 1,
                     'message' => 'Utilisateur non trouvé',
                     'devMessage' => 'Error updating user with id '.$user->getId().': user not found'
                 ]);
@@ -276,13 +312,13 @@ class UserController extends AbstractController
                 $em->flush();
 
                 return $this->json([
-                    'status' => 'SUCCESS',
+                    'exit_code' => 0,
                     'message' => 'Deck ajoute a '.$user->getPseudo(),
                     'devMessage' => "Success : nothing to show here",
                 ]);
             } catch (\Doctrine\ORM\ORMException $e) {
                 return $this->json([
-                    'status' => 'ERROR',
+                    'exit_code' => 1,
                     'message' => 'Erreur lors de l\'ajout du deck à l\'utilisateur',
                     'devMessage' => 'Error updating user with id '.$user->getId().' to set deck '.$deck->getId().' : database update error'
                 ]);
@@ -290,7 +326,7 @@ class UserController extends AbstractController
 
         } else {
             return $this->json([
-                'status' => 'ERROR',
+                'exit_code' => 1,
                 'message' => 'Utilisateur ou deck manquant',
                 'devMessage' => 'Error while getting User/Deck > missing one or both',
             ]);
