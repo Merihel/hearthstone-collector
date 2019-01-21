@@ -11,6 +11,7 @@ use App\Entity\Card;
 use App\Entity\Deck;
 use App\Service\HearthstoneApiService;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
 use Symfony\Component\HttpFoundation\Request;
 use JMS\Serializer\SerializationContext;
@@ -68,79 +69,130 @@ class UserController extends AbstractController
         return new Response($stringResp);
     }
 
+    //FONCTION DE CHECK DE MAIL, EN ROUTE ET EN FONCTION UTIL
+
     /**
      * @Route("/user/check-mail/{mail}")
      */
     public function checkUserMailAction($mail)
     {
-        $user = $this->getDoctrine()
-            ->getRepository(User::class)
-            ->findBy(array('mail' => $mail));
-
-        if ($user == null) {
-            return $this->json([
-                'exit_code' => 1,
-                'message' => 'Cet email est inconnu',
-                'devMessage' => 'UNKNOWN_EMAIL',
-            ]);
-        } else {
+        if ($this->doesMailExists($mail)) {
             return $this->json([
                 'exit_code' => 0,
                 'message' => 'Cet email existe déjà',
                 'devMessage' => 'Success : nothing to show here',
             ]);
+        } else {
+            return $this->json([
+                'exit_code' => 1,
+                'message' => 'Cet email est inconnu',
+                'devMessage' => 'UNKNOWN_EMAIL',
+            ]);
         }
     }
+
+    public function doesMailExists($mail) {
+        $user = $this->getDoctrine()
+            ->getRepository(User::class)
+            ->findBy(array('mail' => $mail));
+
+        if ($user == null) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    //FONCTION DE CHECK DE PSEUDO, EN ROUTE ET EN FONCTION UTIL
 
     /**
      * @Route("/user/check-pseudo/{pseudo}")
      */
     public function checkUserPseudoAction($pseudo)
     {
-        $user = $this->getDoctrine()
-            ->getRepository(User::class)
-            ->findBy(array('pseudo' => $pseudo));
-
-        if ($user == null) {
-            return $this->json([
-                'exit_code' => 1,
-                'message' => 'Ce pseudo est inconnu',
-                'devMessage' => 'UNKNOWN_USERNAME',
-            ]);
-        } else {
+        if ($this->doesPseudoExists($pseudo)) {
             return $this->json([
                 'exit_code' => 0,
                 'message' => 'Ce pseudo existe déjà',
                 'devMessage' => 'Success : nothing to show here',
             ]);
+        } else {
+            return $this->json([
+                'exit_code' => 1,
+                'message' => 'Ce pseudo est inconnu',
+                'devMessage' => 'UNKNOWN_USERNAME',
+            ]);
         }
+    }
 
-        return $this->json(json_decode($jsonObject));
+    public function doesPseudoExists($pseudo) {
+        $user = $this->getDoctrine()
+            ->getRepository(User::class)
+            ->findBy(array('pseudo' => $pseudo));
+        
+        if($user == null) {
+            return false;
+        } else {
+            return true;
+        }
     }
 
     /**
-     * @Route("/user/sync")
+     * @Route("/user/sync1")
      */
-    public function synchronizeUserAction(Request $request, Container $container)
+    public function synchronizeUserActionStep1(Request $request)
     {
         $mail = $request->request->get('mail');
-        var_dump($mail);
-        $jsonStr = $this->checkUserMailAction($mail);
-        echo "<pre>";
-        var_dump(json_decode($jsonStr));
-        echo "</pre>";
-        if(json_decode($this->checkUserMailAction($mail))["exit_code"] == 1) {
+        if($this->doesMailExists($mail)) {
+            $user = $this->getDoctrine()
+                ->getRepository(User::class)
+                ->findBy(array('mail' => $mail));
+            if($user[0]->getPseudo() != null) {
+                return $this->json([
+                    'exit_code' => 0,
+                    'message' => 'Pseudo trouvé: Connexion en cours...',
+                    'devMessage' => 'Success : nothing to show here',
+                ]);
+            } else {
+                return $this->json([
+                    'exit_code' => 2,
+                    'message' => 'Un pseudo est nécessaire',
+                    'devMessage' => 'ERROR_PSEUDO_NEEDED',
+                ]);
+            }
+        } else {
             return $this->json([
-                'exit_code' => 1,
-                'message' => 'User with mail '.$mail. 'not found'
+                'exit_code' => 3,
+                'message' => 'Compte prêt à être créé, un pseudo est nécessaire',
+                'devMessage' => 'ERROR_READY_TO_CREATE_PSEUDO_NEEDED',
+            ]);
+        }
+    }
+
+    /**
+     * @Route("/user/sync2")
+     */
+    public function synchronizeUserActionStep2(Request $request, Container $container)
+    {
+        $serializer = $container->get('jms_serializer');
+        $userToBeCreated = $serializer->deserialize($request->getContent(), 'App\Entity\User', 'json');
+
+        if($this->createUser($userToBeCreated)) {
+            return $this->json([
+                'exit_code' => 0,
+                'message' => 'Utilisateur enregistré au compte social',
+                'devMessage' => 'Success : nothing to show here',
             ]);
         } else {
             return $this->json([
-                'exit_code' => 0,
-                'message' => 'User with mail '.$mail.' found',
+                'exit_code' => 1,
+                'message' => 'Impossible d\'enregistrer le compte',
+                'devMessage' => 'ERROR_USER_NOT_CREATED',
             ]);
         }
     }   
+
+    //CREATION D'UN NOUVEL USER
 
     /**
      * @Route("/user/new")
@@ -148,33 +200,40 @@ class UserController extends AbstractController
     public function newUserAction(Request $request, Container $container, LoggerInterface $logger)
     {
         $logger->info('REQUEST JSON: '.$request->getContent());
-        $em = $this->getDoctrine()->getManager();
         $serializer = $container->get('jms_serializer');
         //Deserialize json from HTTP POST into a valid User object
         $user = $serializer->deserialize($request->getContent(), 'App\Entity\User', 'json');
 
-        if($user->getCoins() == null || $user->getCoins() == 0) {
-            $user->setCoins(75);
-        }
-
-        // tell Doctrine you want to (eventually) save the User (no queries yet)
-        $em->persist($user);
-
-        try {
-            // actually executes the queries (i.e. the INSERT query)
-            $em->flush();
-
+        if($this->createUser($user)) {
             return $this->json([
                 'exit_code' => 0,
                 'message' => 'Utilisateur '.$user->getId().' enregistré',
                 'devMessage' => "Success : nothing to show here",
             ]);
-        } catch (Exception $e) {
+        } else {
             return $this->json([
                 'exit_code' => 1,
                 'message' => 'Erreur lors de l\'enregistrement de l\'utilisateur '.$user->getId(),
-                'devMessage' => $e->getMessage(),
+                'devMessage' => "ERROR_USER_NOT_SAVED",
             ]);
+        }
+    }
+
+    public function createUser($user) {
+        if($user->getCoins() == null || $user->getCoins() == 0) {
+            $user->setCoins(75);
+        }
+
+        $em = $this->getDoctrine()->getManager();
+        // tell Doctrine you want to (eventually) save the User (no queries yet)
+        $em->persist($user);
+        
+        try {
+            // actually executes the queries (i.e. the INSERT query)
+            $em->flush();
+            return true;
+        } catch (Exception $e) {
+            return false;
         }
     }
 
