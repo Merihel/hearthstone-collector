@@ -142,12 +142,13 @@ class UserController extends AbstractController
      */
     public function synchronizeUserActionStep1(Request $request)
     {
-        $mail = $request->request->get('mail');
+        $json = json_decode($request->getContent(), true);
+        $mail = $json["mail"];
         if($this->doesMailExists($mail)) {
             $user = $this->getDoctrine()
                 ->getRepository(User::class)
                 ->findBy(array('mail' => $mail));
-            if($user[0]->getPseudo() != null) {
+            if($user[0]->getPseudo() != null && $user[0]->getPseudo() != "") {
                 return $this->json([
                     'exit_code' => 0,
                     'message' => 'Pseudo trouvé: Connexion en cours...',
@@ -170,26 +171,44 @@ class UserController extends AbstractController
     }
 
     /**
-     * @Route("/user/sync2")
+     * @Route("/user/sync2/{arg}")
      */
-    public function synchronizeUserActionStep2(Request $request, Container $container)
+    public function synchronizeUserActionStep2(Request $request, Container $container, $arg)
     {
         $serializer = $container->get('jms_serializer');
         $userToBeCreated = $serializer->deserialize($request->getContent(), 'App\Entity\User', 'json');
 
-        if($this->createUser($userToBeCreated)) {
-            return $this->json([
-                'exit_code' => 0,
-                'message' => 'Utilisateur enregistré au compte social',
-                'devMessage' => 'Success : nothing to show here',
-            ]);
-        } else {
-            return $this->json([
-                'exit_code' => 1,
-                'message' => 'Impossible d\'enregistrer le compte',
-                'devMessage' => 'ERROR_USER_NOT_CREATED',
-            ]);
+        if ($arg == "create") {
+            if($this->createUser($userToBeCreated)) {
+                return $this->json([
+                    'exit_code' => 0,
+                    'message' => 'Utilisateur enregistré au compte social',
+                    'devMessage' => 'Success : nothing to show here',
+                ]);
+            } else {
+                return $this->json([
+                    'exit_code' => 1,
+                    'message' => 'Impossible d\'enregistrer le compte',
+                    'devMessage' => 'ERROR_USER_NOT_CREATED',
+                ]);
+            }
+        } else if ($arg == "update") {
+
+            if($this->updateUser($userToBeCreated) == 0) {
+                return $this->json([
+                    'exit_code' => 0,
+                    'message' => 'Utilisateur enregistré au compte social',
+                    'devMessage' => 'Success : nothing to show here',
+                ]);
+            } else {
+                return $this->json([
+                    'exit_code' => 1,
+                    'message' => 'Impossible d\'enregistrer le nuveau compte social',
+                    'devMessage' => 'ERROR_USER_NOT_CREATED',
+                ]);
+            }
         }
+        
     }   
 
     //CREATION D'UN NOUVEL USER
@@ -248,49 +267,87 @@ class UserController extends AbstractController
     {
         // you can fetch the EntityManager via $this->getDoctrine()
         // or you can add an argument to your action: index(EntityManagerInterface $entityManager)
-        $em = $this->getDoctrine()->getManager();
         $serializer = $container->get('jms_serializer');
 
         $user = null;
         try {
             //Deserialize json from HTTP POST into a valid User object
-            $user = $serializer->deserialize($request->request->get('json'), 'App\Entity\User', 'json');
+            $user = $serializer->deserialize($request->getContent(), 'App\Entity\User', 'json');
+
+            if ($user != null) {
+                $didUpdate = $this->updateUser($user);
+            }
         } catch (\JMS\Serializer\Exception\RuntimeException $e) {
             return $this->json([
                 'exit_code' => 1,
                 'message' => 'Erreur lors de l\'envoi des données',
-                'devMessage' => 'Error deserializing JSON: '.$request->request->get('json'),
+                'devMessage' => 'Error deserializing JSON: '.$request->getContent(),
             ]);
         }
 
+        switch($didUpdate) {
+            case 0:
+                return $this->json([
+                    'exit_code' => 0,
+                    'message' => 'Utilisateur mis à jour !',
+                    'devMessage' => "Success : nothing to show here",
+                ]);
+                break;
+            case 1:
+                return $this->json([
+                    'exit_code' => 1,
+                    'message' => 'Utilisateur non trouvé',
+                    'devMessage' => 'Error updating user with id '.$user->getId().': user not found'
+                ]);
+                break;
+            case 2:
+                return $this->json([
+                    'exit_code' => 1,
+                    'message' => 'Erreur lors de la mise à jour',
+                    'devMessage' => 'Error updating user with id '.$user->getId().': database update error'
+                ]);
+                break;
+        }
+
+    }
+
+    public function updateUser($user) {
+
+        $em = $this->getDoctrine()->getManager();
+
+        $lastUser = $this->getDoctrine()
+            ->getRepository(User::class)
+            ->findBy(array('mail' => $user->getMail()));
+
+        if ($lastUser != null) {
+            if($user->getFacebookId() != null) 
+                $lastUser[0]->setFacebookId($user->getFacebookId());
+            if($user->getGoogleId() != null) 
+                $lastUser[0]->setGoogleId($user->getGoogleId());
+            if($user->getPseudo() != null) 
+                $lastUser[0]->setPseudo($user->getPseudo());
+            if($user->getCoins() != null) 
+                $lastUser[0]->setCoins($user->getCoins());
+        } else {
+            return 1;
+        }
+        
+
         try {
             // tell Doctrine you want to (eventually) update the User (no queries yet). The user null fields are stripped
-            $em->merge($users);
+            $em->merge($lastUser[0]);
         } catch (\Doctrine\ORM\EntityNotFoundException $e) {
-            return $this->json([
-                'exit_code' => 1,
-                'message' => 'Utilisateur non trouvé',
-                'devMessage' => 'Error updating user with id '.$user->getId().': user not found'
-            ]);
+            return 1;
         }
 
         try {
             // actually executes the queries (i.e. the INSERT query)
             $em->flush();
 
-            return $this->json([
-                'exit_code' => 0,
-                'message' => 'Utilisateur mis à jour !',
-                'devMessage' => "Success : nothing to show here",
-            ]);
+            return 0;
         } catch (\Doctrine\ORM\ORMException $e) {
-            return $this->json([
-                'exit_code' => 1,
-                'message' => 'Erreur lors de la mise à jour',
-                'devMessage' => 'Error updating user with id '.$user->getId().': database update error'
-            ]);
+            return 2;
         }
-
     }
 
     /**

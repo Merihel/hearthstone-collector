@@ -266,4 +266,14 @@ class User
 
         return $this;
     }
+
+    public function toString(): ?string
+    {
+        return "id: ".$this->id.",\n
+        pseudo: ".$this->pseudo.",\n
+        mail: ".$this->mail.",\n
+        coins: ".$this->coins.",\n
+        googleId: ".$this->googleId.",\n
+        facebookId: ".$this->facebookId;
+    }
 }
