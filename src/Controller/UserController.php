@@ -69,6 +69,32 @@ class UserController extends AbstractController
         return new Response($stringResp);
     }
 
+    //ROUTES DE LOGIN
+
+    /**
+     * @Route("/user/login")
+     */
+    public function loginAction(Request $request)
+    {
+        $json = json_decode($request->getContent(), true);
+        $identifier = $json["identifier"];
+        if ($this->checkEmailStruct($identifier)) { //if it's a mail
+            if($this->doesMailExists($identifier)) {
+                
+            } else {
+
+            }
+        } else { //if it's a pseudo
+            if($this->doesPseudoExists($identifier)) {
+
+            } else {
+
+            }
+        }
+
+        return new Response("{'status':'OK'}");
+    }
+
     //FONCTION DE CHECK DE MAIL, EN ROUTE ET EN FONCTION UTIL
 
     /**
@@ -102,6 +128,12 @@ class UserController extends AbstractController
             return true;
         }
     }
+
+    function checkEmailStruct($email) {
+        $find1 = strpos($email, '@');
+        $find2 = strpos($email, '.');
+        return ($find1 !== false && $find2 !== false && $find2 > $find1 ? true : false);
+     }
 
     //FONCTION DE CHECK DE PSEUDO, EN ROUTE ET EN FONCTION UTIL
 
