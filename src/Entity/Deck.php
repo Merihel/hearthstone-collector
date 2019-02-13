@@ -26,6 +26,13 @@ class Deck
      */
     private $description;
 
+    /**
+     * @ORM\ManyToOne(targetEntity="App\Entity\User")
+     * @ORM\JoinColumn(name="user_id", referencedColumnName="id")
+     */
+    private $userId;
+
+
     public function getId(): ?int
     {
         return $this->id;
@@ -36,9 +43,21 @@ class Deck
         return $this->name;
     }
 
+    public function getUserId(): ?string
+    {
+        return $this->userId;
+    }
+
     public function setName(string $name): self
     {
         $this->name = $name;
+
+        return $this;
+    }
+
+    public function setUserId(int $userId): self
+    {
+        $this->userId = $userId;
 
         return $this;
     }

@@ -83,4 +83,25 @@ class DeckController extends AbstractController
             'devMessage' => "Success : nothing to show here",
         ]);
     }
+
+
+    /**
+    * @Route("/deck/update")
+    */
+    public function updateDeckAction(Request $request) {
+      $em = $this->getDoctrine()->getManager();
+      $serializer = $container->get('jms_serializer');
+      $deck = null;
+    }
+
+    /**
+    * @Route("/deck/delete/{id}")
+    */
+    public function deleteDeckAction(Request $request) {
+        $em = $this->getDoctrine()->getManager();
+        $deck = $container->get('jms_serializer');
+        $em->remove($deck);
+        $em->flush();
+      }
+
 }
