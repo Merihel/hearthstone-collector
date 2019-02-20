@@ -32,6 +32,15 @@ class Deck
      */
     private $userId;
 
+    /**
+     * @ORM\ManyToMany(targetEntity="App\Entity\Card")
+     * @ORM\JoinTable(name="decks_cards",
+     *      joinColumns={@ORM\JoinColumn(name="deck_id", referencedColumnName="id")},
+     *      inverseJoinColumns={@ORM\JoinColumn(name="card_id", referencedColumnName="id")}
+     *      )
+     */
+    private $cardsList;
+
 
     public function getId(): ?int
     {
@@ -47,6 +56,7 @@ class Deck
     {
         return $this->userId;
     }
+
 
     public function setName(string $name): self
     {
@@ -70,6 +80,32 @@ class Deck
     public function setDescription(string $description): self
     {
         $this->description = $description;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection|Card[]
+     */
+    public function getCardsList(): Collection
+    {
+        return $this->cardsList;
+    }
+
+    public function addCardsList(Card $cardsList): self
+    {
+        if (!$this->cardsList->contains($cardsList)) {
+            $this->cardsList[] = $cardsList;
+        }
+
+        return $this;
+    }
+
+    public function removeCardsList(Card $cardsList): self
+    {
+        if ($this->cardsList->contains($cardsList)) {
+            $this->cardsList->removeElement($cardsList);
+        }
 
         return $this;
     }
