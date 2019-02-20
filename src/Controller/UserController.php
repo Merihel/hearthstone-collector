@@ -45,6 +45,32 @@ class UserController extends AbstractController
     }
 
     /**
+     * @Route("/user/select-by-mail/{mail}")
+     */
+    public function getUserByMailAction($mail, Container $container)
+    {
+        //Container possède les services, not celui de JMS
+        //Je créé un objet JMSSerializer pour la sérialisation/déserialisation
+        $serializer = $container->get('jms_serializer');
+
+        //Je déclare un objet User que je récupère grâce au manager de Doctrine, qui utilise le repository de mon User
+        $user = $this->getDoctrine()
+            ->getRepository(User::class)
+            ->findBy(array('mail' => $mail));
+
+        //Si je n'ai pas d'user, je lève une exception
+        if (!$user[0]) {
+            throw $this->createNotFoundException(
+                'No user found for mail '.$mail
+            );
+        } else {
+            //Sinon je créé mon objet JSON via la fonction "serialize" de JMS, et l'envoie en front
+            $jsonObject = $serializer->serialize($user[0], 'json');
+            return $this->json(json_decode($jsonObject));
+        }
+    }
+
+    /**
      * @Route("/user/select-with-cards/{id}", name="user")
      */
     public function selectWithCardsAction($id, Request $request, Container $container)
@@ -74,25 +100,64 @@ class UserController extends AbstractController
     /**
      * @Route("/user/login")
      */
-    public function loginAction(Request $request)
+    public function loginAction(Request $request, Container $container)
     {
+        $serializer = $container->get('jms_serializer');
         $json = json_decode($request->getContent(), true);
         $identifier = $json["identifier"];
+        $password = $json["password"];
         if ($this->checkEmailStruct($identifier)) { //if it's a mail
             if($this->doesMailExists($identifier)) {
-                
+                $user = $this->getDoctrine()
+                    ->getRepository(User::class)
+                    ->findBy(array('mail' => $identifier));
+                if ($user[0] !=null && $this->checkPasswordConcordance($user[0], $password)) {
+                    $jsonObject = $serializer->serialize($user[0], 'json');
+                    return $this->json(json_decode($jsonObject));
+                } else {
+                    return $this->json([
+                        'exit_code' => 500,
+                        'message' => 'Mot de passe invalide pour le mail donné',
+                        'devMessage' => 'INVALID_PASSWORD',
+                    ]);
+                }
             } else {
-
+                return $this->json([
+                    'exit_code' => 500,
+                    'message' => 'Utilisateur introuvable',
+                    'devMessage' => 'UNKNOWN_EMAIL',
+                ]);
             }
         } else { //if it's a pseudo
             if($this->doesPseudoExists($identifier)) {
-
+                //user with pseudo "$identifier" found
+                $user = $this->getDoctrine()
+                    ->getRepository(User::class)
+                    ->findBy(array('pseudo' => $identifier));
+                if ($user[0] !=null && $this->checkPasswordConcordance($user[0], $password)) {
+                    $jsonObject = $serializer->serialize($user[0], 'json');
+                    return $this->json(json_decode($jsonObject)); //On retourne l'user car le mot de passe est bon
+                } else {
+                    return $this->json([
+                        'exit_code' => 500,
+                        'message' => 'Mot de passe invalide pour le pseudo donné',
+                        'devMessage' => 'INVALID_PASSWORD',
+                    ]);
+                }
             } else {
-
+                return $this->json([
+                    'exit_code' => 500,
+                    'message' => 'Utilisateur introuvable',
+                    'devMessage' => 'UNKNOWN_PSEUDO',
+                ]);
             }
         }
 
-        return new Response("{'status':'OK'}");
+        return $this->json([
+            'exit_code' => 500,
+            'message' => 'Une erreur interne est survenue',
+            'devMessage' => 'ERR_SHOULD_NOT_BE_HERE',
+        ]);
     }
 
     //FONCTION DE CHECK DE MAIL, EN ROUTE ET EN FONCTION UTIL
@@ -130,9 +195,7 @@ class UserController extends AbstractController
     }
 
     function checkEmailStruct($email) {
-        $find1 = strpos($email, '@');
-        $find2 = strpos($email, '.');
-        return ($find1 !== false && $find2 !== false && $find2 > $find1 ? true : false);
+        return (strpos($email, '@'));
      }
 
     //FONCTION DE CHECK DE PSEUDO, EN ROUTE ET EN FONCTION UTIL
@@ -167,6 +230,11 @@ class UserController extends AbstractController
         } else {
             return true;
         }
+    }
+
+    //FONCTION DE CHECK DE MOT DE PASSE
+    public function checkPasswordConcordance($user, $password) {
+        return $user->getPassword() == $password ? true : false;
     }
 
     /**
@@ -209,6 +277,8 @@ class UserController extends AbstractController
     {
         $serializer = $container->get('jms_serializer');
         $userToBeCreated = $serializer->deserialize($request->getContent(), 'App\Entity\User', 'json');
+
+        $userToBeCreated->setPassword("NONE");
 
         if ($arg == "create") {
             if($this->createUser($userToBeCreated)) {
@@ -274,6 +344,8 @@ class UserController extends AbstractController
         if($user->getCoins() == null || $user->getCoins() == 0) {
             $user->setCoins(75);
         }
+
+        //Here the user password SHOULD BE encrypted with a bcrypt algorithm
 
         $em = $this->getDoctrine()->getManager();
         // tell Doctrine you want to (eventually) save the User (no queries yet)

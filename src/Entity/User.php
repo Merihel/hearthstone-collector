@@ -47,6 +47,15 @@ class User
     private $mail;
 
     /**
+     * The below length depends on the "algorithm" you use for encoding
+     * the password, but this works well with bcrypt.
+     *
+     * @ORM\Column(type="string", length=64)
+     * @Serializer\Expose
+     */
+    private $password;
+
+    /**
      * @ORM\Column(type="integer")
      * @Serializer\Expose
      */
@@ -149,6 +158,18 @@ class User
     public function setMail(string $mail): self
     {
         $this->mail = $mail;
+
+        return $this;
+    }
+
+    public function getPassword(): ?string
+    {
+        return $this->password;
+    }
+
+    public function setPassword(string $password): self
+    {
+        $this->password = $password;
 
         return $this;
     }
