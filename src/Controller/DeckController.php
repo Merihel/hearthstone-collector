@@ -60,16 +60,15 @@ class DeckController extends AbstractController
     /**
      * @Route("/deck/new")
      */
-    public function newDeckAction(Request $request)
+    public function newDeckAction(Request $request, Container $container)
     {
         // you can fetch the EntityManager via $this->getDoctrine()
         // or you can add an argument to your action: index(EntityManagerInterface $entityManager)
-        $entityManager = $this->getDoctrine()->getManager();
-        $deck = new Deck();
 
-        // + liste de cartes
-        $deck->setName($request->request->get('name'));
-        $deck->setDescription($request->request->get('description'));
+        $entityManager = $this->getDoctrine()->getManager();
+
+        $serializer = $container->get('jms_serializer');
+        $deck = $serializer->deserialize($request->getContent(), 'App\Entity\Deck', 'json');
 
         // tell Doctrine you want to (eventually) save the User (no queries yet)
         $entityManager->persist($deck);
@@ -88,7 +87,7 @@ class DeckController extends AbstractController
     /**
     * @Route("/deck/update")
     */
-    public function updateDeckAction(Request $request) {
+    public function updateDeckAction(Request $request, Container $container) {
       $em = $this->getDoctrine()->getManager();
       $serializer = $container->get('jms_serializer');
       $deck = null;
@@ -97,11 +96,35 @@ class DeckController extends AbstractController
     /**
     * @Route("/deck/delete/{id}")
     */
-    public function deleteDeckAction(Request $request) {
+    public function deleteDeckAction(Request $request, $id, Container $container) {
         $em = $this->getDoctrine()->getManager();
-        $deck = $container->get('jms_serializer');
-        $em->remove($deck);
-        $em->flush();
+        $serializer = $container->get('jms_serializer');
+        $deck = $this->getDoctrine()->getRepository(Deck::class)->find($id);        
+
+        if (!$deck){
+            return $this->json([
+                'exit_code' => 500,
+                'message' => 'Pas de deck trouvé',
+                'devMessage' => 'INVALID_DECK',
+            ]);
+        } else {
+            // on supprime la relation user-deck
+            $user = $deck->getUserId();
+            $user->removeDeck($deck);
+            $em->persist($user);
+            // On supprime le deck
+            $em->remove($deck);
+
+            $em->flush();
+
+            return $this->json([
+                'exit_code' => 200,
+                'message' => 'Deck supprimé',
+                'devMessage' => 'SUCCESS',
+            ]);
+        }
+
+
       }
 
 }

@@ -52,7 +52,7 @@ class Deck
         return $this->name;
     }
 
-    public function getUserId(): ?string
+    public function getUserId(): ?User
     {
         return $this->userId;
     }
@@ -65,7 +65,7 @@ class Deck
         return $this;
     }
 
-    public function setUserId(int $userId): self
+    public function setUserId(User $userId): self
     {
         $this->userId = $userId;
 
