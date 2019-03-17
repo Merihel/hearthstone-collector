@@ -21,7 +21,6 @@ class FriendshipController extends AbstractController
      */
     public function addFriendshipAction(Request $request, Container $container)
     {
-
         $serializer = $container->get('jms_serializer');
         $json = json_decode($request->getContent(), true);
         if (isset($json["user1"]) && isset($json["user2"])) {
@@ -59,8 +58,6 @@ class FriendshipController extends AbstractController
                 'devMessage' => 'CANT_FIND_IDS_IN_JSON',
             ]);
         }
-        
-        
     }
 
     public function friendshipAlreadyExists(Friendship $friendship) {
@@ -86,18 +83,11 @@ class FriendshipController extends AbstractController
         } else {
             $test2Passed = true;
         }
-        echo "<pre>";
-        var_dump($test1Passed);
-        var_dump($test2Passed);
-        echo "</pre>";
         if ($test1Passed) {
-            echo ">true<";
             return true;
         } else if ($test2Passed) {
-            echo ">true<";
             return true;
         } else {
-            echo ">false<";
             return false;
         }
     }
