@@ -93,9 +93,51 @@ class FriendshipController extends AbstractController
     }
 
     /**
-     * @Route("/friendship/selectAllFriendship")
+     * @Route("/friendship/selectAllByUser/{id}")
      */
+    public function getFriendshipAction(Request $request, Container $container, $id)
+    {
+        $serializer = $container->get('jms_serializer');
 
+        $user = $this->getDoctrine()
+            ->getRepository(User::class)
+            ->findById($id);
+        
+        $firstList = $this->getDoctrine()
+            ->getRepository(Friendship::class)
+            ->findBy(array('user1' => $user));
+        
+        /*
+        for($i=0; $i<count($firstList); $i++) {
+            echo $firstList[$i]->getUser1()->getPseudo() ." => ". $firstList[$i]->getUser2()->getPseudo() . " \n , ";
+        }
+        */
 
+        $secondList = $this->getDoctrine()
+            ->getRepository(Friendship::class)
+            ->findBy(array('user2' => $user));
+
+        for($i=0; $i<count($secondList); $i++) {
+            $secondList[$i] = $this->reverseUsers($secondList[$i]);
+        }
+
+        $finalArray = array_merge($firstList, $secondList);
+
+        /*
+        for($i=0; $i<count($finalArray); $i++) {
+            echo $finalArray[$i]->getUser1()->getPseudo() ." => ". $finalArray[$i]->getUser2()->getPseudo() . " \n , ";
+        }
+        */
+
+        return $this->json(json_decode($serializer->serialize($finalArray, 'json')));
+    }
     
+
+    public function reverseUsers(Friendship $friendship) {
+        $usr1 = $friendship->getUser1();
+        $usr2 = $friendship->getUser2();
+        $friendship->setUser1($usr2);
+        $friendship->setUser2($usr1);
+        return $friendship;
+    }
 }
