@@ -87,11 +87,91 @@ class DeckController extends AbstractController
     /**
     * @Route("/deck/update")
     */
-    public function updateDeckAction(Request $request, Container $container) {
-      $em = $this->getDoctrine()->getManager();
-      $serializer = $container->get('jms_serializer');
-      $deck = null;
+
+    public function updateDeckAction(Request $request, Container $container)
+    {
+        // you can fetch the EntityManager via $this->getDoctrine()
+        // or you can add an argument to your action: index(EntityManagerInterface $entityManager)
+        $serializer = $container->get('jms_serializer');
+
+        $deck = null;
+        try {
+            $deck = $serializer->deserialize($request->getContent(), 'App\Entity\Deck', 'json');
+
+            if ($deck != null) {
+                $didUpdate = $this->updateDeck($deck);
+            }
+        } catch (\JMS\Serializer\Exception\RuntimeException $e) {
+            return $this->json([
+                'exit_code' => 1,
+                'message' => 'Erreur lors de l\'envoi des données',
+                'devMessage' => 'Error deserializing JSON: '.$request->getContent(),
+            ]);
+        }
+
+        switch($didUpdate) {
+            case 0:
+                return $this->json([
+                    'exit_code' => 0,
+                    'message' => 'Deck mis à jour !',
+                    'devMessage' => "Success : nothing to show here",
+                ]);
+                break;
+            case 1:
+                return $this->json([
+                    'exit_code' => 1,
+                    'message' => 'Deck non trouvé',
+                    'devMessage' => 'Error updating deck with id '.$deck->getId().': deck not found'
+                ]);
+                break;
+            case 2:
+                return $this->json([
+                    'exit_code' => 1,
+                    'message' => 'Erreur lors de la mise à jour',
+                    'devMessage' => 'Error updating deck with id '.$deck->getId().': database update error'
+                ]);
+                break;
+        }
+
     }
+
+
+
+
+    public function updateDeck($deck) {
+
+        $em = $this->getDoctrine()->getManager();
+
+        $lastDeck = $this->getDoctrine()
+            ->getRepository(Deck::class)
+            ->findBy(array('id' => $deck->getId()));
+
+        if ($lastDeck != null) {
+            if($deck->getName() != null) 
+                $lastDeck[0]->setName($deck->getName());
+            if($deck->getDescription() != null) 
+                $lastDeck[0]->setDescription($deck->getDescription());
+        } else {
+            return 1;
+        }        
+
+        try {
+            // tell Doctrine you want to (eventually) update the Deck (no queries yet). The deck null fields are stripped
+            $em->merge($lastDeck[0]);
+        } catch (\Doctrine\ORM\EntityNotFoundException $e) {
+            return 1;
+        }
+
+        try {
+            // actually executes the queries (i.e. the INSERT query)
+            $em->flush();
+
+            return 0;
+        } catch (\Doctrine\ORM\ORMException $e) {
+            return 2;
+        }
+    }
+
 
     /**
     * @Route("/deck/delete/{id}")
