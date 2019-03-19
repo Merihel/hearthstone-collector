@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use JMS\Serializer\Annotation\MaxDepth;
 
 /**
  * @ORM\Entity(repositoryClass="App\Repository\FriendshipRepository")
@@ -25,11 +26,13 @@ class Friendship
 
     /**
      * @ORM\ManyToOne(targetEntity="App\Entity\User")
+     * @MaxDepth(1)
      */
     private $user1;
 
     /**
      * @ORM\ManyToOne(targetEntity="App\Entity\User")
+     * @MaxDepth(1)
      */
     private $user2;
 

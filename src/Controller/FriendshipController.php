@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use FOS\RestBundle\Controller\Annotations\View;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\ContainerInterface as Container;
 use Symfony\Component\Routing\Annotation\Route;
@@ -9,11 +10,16 @@ use App\Entity\Card;
 use App\Entity\User;
 use App\Entity\Friendship;
 use Psr\Log\LoggerInterface;
+use JMS\Serializer\SerializationContext;
 use App\Service\HearthstoneApiService;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 
+
+/*
+* @View(serializerEnableMaxDepthChecks=true)
+*/
 class FriendshipController extends AbstractController
 {
     /**
@@ -93,7 +99,7 @@ class FriendshipController extends AbstractController
     }
 
     /**
-     * @Route("/friendship/selectAllByUser/{id}")
+     * @Route("/friendship/selectByUser/{id}")
      */
     public function getFriendshipAction(Request $request, Container $container, $id)
     {
@@ -105,7 +111,7 @@ class FriendshipController extends AbstractController
         
         $firstList = $this->getDoctrine()
             ->getRepository(Friendship::class)
-            ->findBy(array('user1' => $user));
+            ->findBy(array('user1' => $user, 'isAccepted' => true));
         
         /*
         for($i=0; $i<count($firstList); $i++) {
@@ -115,7 +121,47 @@ class FriendshipController extends AbstractController
 
         $secondList = $this->getDoctrine()
             ->getRepository(Friendship::class)
-            ->findBy(array('user2' => $user));
+            ->findBy(array('user2' => $user, 'isAccepted' => true));
+
+        for($i=0; $i<count($secondList); $i++) {
+            $secondList[$i] = $this->reverseUsers($secondList[$i]);
+        }
+
+        $finalArray = array_merge($firstList, $secondList);
+
+        /*
+        for($i=0; $i<count($finalArray); $i++) {
+            echo $finalArray[$i]->getUser1()->getPseudo() ." => ". $finalArray[$i]->getUser2()->getPseudo() . " \n , ";
+        }
+        */
+
+        return $this->json(json_decode($serializer->serialize($finalArray, 'json')));
+    }
+
+    /**
+     * @Route("/friendship/selectByUserPending/{id}")
+     */
+    public function getPendingFriendshipAction(Request $request, Container $container, $id)
+    {
+        $serializer = $container->get('jms_serializer');
+
+        $user = $this->getDoctrine()
+            ->getRepository(User::class)
+            ->findById($id);
+        
+        $firstList = $this->getDoctrine()
+            ->getRepository(Friendship::class)
+            ->findBy(array('user1' => $user, 'isAccepted' => false));
+        
+        /*
+        for($i=0; $i<count($firstList); $i++) {
+            echo $firstList[$i]->getUser1()->getPseudo() ." => ". $firstList[$i]->getUser2()->getPseudo() . " \n , ";
+        }
+        */
+
+        $secondList = $this->getDoctrine()
+            ->getRepository(Friendship::class)
+            ->findBy(array('user2' => $user, 'isAccepted' => false));
 
         for($i=0; $i<count($secondList); $i++) {
             $secondList[$i] = $this->reverseUsers($secondList[$i]);
@@ -139,5 +185,33 @@ class FriendshipController extends AbstractController
         $friendship->setUser1($usr2);
         $friendship->setUser2($usr1);
         return $friendship;
+    }
+
+    /**
+     * @Route("/friendship/delete/{id}")
+     */
+    public function deleteFriendshipAction(Request $request, Container $container, $id)
+    {
+        $friendship = $this->getDoctrine()
+            ->getRepository(Friendship::class)
+            ->findById($id);
+
+        if ($friendship[0] != null) {
+            $em = $this->getDoctrine()->getManager();
+            $em->remove($friendship[0]);
+            $em->flush();
+
+            return $this->json([
+                'exit_code' => 200,
+                'message' => $friendship->getUser2()->getPseudo() . ' a bien été supprimé',
+                'devMessage' => 'SUCCESS',
+            ]);
+        } else {
+            return $this->json([
+                'exit_code' => 500,
+                'message' => 'Erreur: Cet ami n\'existe pas',
+                'devMessage' => 'ERROR_FRIEND_NOT_FOUND',
+            ]);
+        }
     }
 }
