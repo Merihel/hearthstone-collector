@@ -70,17 +70,32 @@ class DeckController extends AbstractController
         $serializer = $container->get('jms_serializer');
         $deck = $serializer->deserialize($request->getContent(), 'App\Entity\Deck', 'json');
 
-        // tell Doctrine you want to (eventually) save the User (no queries yet)
-        $entityManager->persist($deck);
 
-        // actually executes the queries (i.e. the INSERT query)
-        $entityManager->flush();
+        if($this->createDeck($deck)) {
+            return $this->json([
+                'exit_code' => 0,
+                'message' => 'Deck enregistré',
+                'devMessage' => "Success : nothing to show here",
+            ]);
+        } else {
+            return $this->json([
+                'exit_code' => 1,
+                'message' => 'Erreur lors de la création du deck'.$deck->getId(),
+                'devMessage' => "ERROR_DECK_NOT_SAVED",
+            ]);
+        }
+    }
 
-        return $this->json([
-            'message' => 'Successfully saved deck',
-            'id' => $deck->getId(),
-            'devMessage' => "Success : nothing to show here",
-        ]);
+    public function createDeck($deck) {
+        $em = $this->getDoctrine()->getManager();
+        $em->persist($deck);
+        
+        try {
+            $em->flush();
+            return true;
+        } catch (Exception $e) {
+            return false;
+        }
     }
 
 
