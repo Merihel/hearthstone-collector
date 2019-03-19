@@ -23,7 +23,7 @@ use Symfony\Component\HttpFoundation\Request;
 class FriendshipController extends AbstractController
 {
     /**
-     * @Route("/friendship/add")
+     * @Route("/friendship/new")
      */
     public function addFriendshipAction(Request $request, Container $container)
     {
@@ -34,11 +34,34 @@ class FriendshipController extends AbstractController
             ->getRepository(User::class)
             ->find($json["user1"]);
 
-            $user2 = $this->getDoctrine()
-            ->getRepository(User::class)
-            ->find($json["user2"]);
+            if(is_string($json["user2"])) {
+                $user2 = $this->getDoctrine()
+                    ->getRepository(User::class)
+                    ->findBy(array('pseudo' => $json["user2"]));
+            } else {
+                $user2 = $this->getDoctrine()
+                    ->getRepository(User::class)
+                    ->find($json["user2"]);
+            }
 
-            $friendship = new Friendship($user1, $user2, $json["isAccepted"]);
+            if (isset($user2[0])) {
+                if ($user2[0]->getPseudo() != $user1->getPseudo()) {
+                    $friendship = new Friendship($user1, $user2[0], $json["isAccepted"], $json["whoDemanding"]);
+                } else {
+                    return $this->json([
+                        'exit_code' => 500,
+                        'message' => 'Hello darkness my old friend...',
+                        'devMessage' => 'SAME_USER',
+                    ]);
+                }
+                
+            } else {
+                return $this->json([
+                    'exit_code' => 500,
+                    'message' => 'Erreur: utilisateur introuvable',
+                    'devMessage' => 'CANT_FIND_SECOND_USER',
+                ]);
+            }
 
             if ($this->friendshipAlreadyExists($friendship)) {
                 return $this->json([
@@ -54,13 +77,13 @@ class FriendshipController extends AbstractController
             
             return $this->json([
                 'exit_code' => 200,
-                'message' => 'Ami ajouté',
+                'message' => 'Ami ajouté, en attente de son acceptation',
                 'devMessage' => 'SUCCESS',
             ]);
         } else {
             return $this->json([
                 'exit_code' => 500,
-                'message' => 'Impossible d\'ajouter cet ami',
+                'message' => 'Impossible d\'ajouter cet ami: il est peut-être introuvable',
                 'devMessage' => 'CANT_FIND_IDS_IN_JSON',
             ]);
         }
@@ -111,7 +134,7 @@ class FriendshipController extends AbstractController
         
         $firstList = $this->getDoctrine()
             ->getRepository(Friendship::class)
-            ->findBy(array('user1' => $user, 'isAccepted' => true));
+            ->findBy(array('user1' => $user));
         
         /*
         for($i=0; $i<count($firstList); $i++) {
@@ -121,7 +144,7 @@ class FriendshipController extends AbstractController
 
         $secondList = $this->getDoctrine()
             ->getRepository(Friendship::class)
-            ->findBy(array('user2' => $user, 'isAccepted' => true));
+            ->findBy(array('user2' => $user));
 
         for($i=0; $i<count($secondList); $i++) {
             $secondList[$i] = $this->reverseUsers($secondList[$i]);
@@ -203,7 +226,36 @@ class FriendshipController extends AbstractController
 
             return $this->json([
                 'exit_code' => 200,
-                'message' => $friendship->getUser2()->getPseudo() . ' a bien été supprimé',
+                'message' => $friendship[0]->getUser2()->getPseudo() . ' a bien été supprimé',
+                'devMessage' => 'SUCCESS',
+            ]);
+        } else {
+            return $this->json([
+                'exit_code' => 500,
+                'message' => 'Erreur: Cet ami n\'existe pas',
+                'devMessage' => 'ERROR_FRIEND_NOT_FOUND',
+            ]);
+        }
+    }
+
+    /**
+     * @Route("/friendship/accept/{id}")
+     */
+    public function acceptFriendshipAction(Request $request, Container $container, $id)
+    {
+        $friendship = $this->getDoctrine()
+            ->getRepository(Friendship::class)
+            ->findById($id);
+
+        if ($friendship[0] != null) {
+            $friendship[0]->setIsAccepted(true);
+            $em = $this->getDoctrine()->getManager();
+            $em->merge($friendship[0]);
+            $em->flush();
+
+            return $this->json([
+                'exit_code' => 200,
+                'message' => 'Ami ajouté !',
                 'devMessage' => 'SUCCESS',
             ]);
         } else {

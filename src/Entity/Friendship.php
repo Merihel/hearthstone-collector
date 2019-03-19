@@ -4,17 +4,19 @@ namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 use JMS\Serializer\Annotation\MaxDepth;
+use JMS\Serializer\Annotation\SerializedName as SerializedName;
 
 /**
  * @ORM\Entity(repositoryClass="App\Repository\FriendshipRepository")
  */
 class Friendship
 {
-    public function __construct(User $user1, User $user2, bool $isAccepted)
+    public function __construct(User $user1, User $user2, bool $isAccepted, int $whoDemanding)
     {
         $this->setUser1($user1);
         $this->setUser2($user2);
         $this->setIsAccepted($isAccepted);
+        $this->setWhoDemanding($whoDemanding);
     }
 
     /**
@@ -38,8 +40,15 @@ class Friendship
 
     /**
      * @ORM\Column(type="boolean")
+     * @SerializedName("isAccepted")
      */
     private $isAccepted;
+
+    /**
+     * @ORM\Column(type="integer")
+     * @SerializedName("whoDemanding")
+     */
+    private $whoDemanding;
 
     public function getId(): ?int
     {
@@ -78,6 +87,18 @@ class Friendship
     public function setIsAccepted(bool $isAccepted): self
     {
         $this->isAccepted = $isAccepted;
+
+        return $this;
+    }
+
+    public function getWhoDemanding(): ?int
+    {
+        return $this->whoDemanding;
+    }
+
+    public function setWhoDemanding(int $whoDemanding): self
+    {
+        $this->whoDemanding = $whoDemanding;
 
         return $this;
     }
