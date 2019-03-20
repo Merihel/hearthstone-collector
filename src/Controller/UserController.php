@@ -325,10 +325,27 @@ class UserController extends AbstractController
         //Deserialize json from HTTP POST into a valid User object
         $user = $serializer->deserialize($request->getContent(), 'App\Entity\User', 'json');
 
+
+        if($this->doesMailExists($user->getMail())) {
+            return $this->json([
+                'exit_code' => 1,
+                'message' => 'Ce mail existe déjà',
+                'devMessage' => "ERROR_MAIL_ALREADY_EXISTS",
+            ]);
+        }
+
+        if($this->doesPseudoExists($user->getPseudo())) {
+            return $this->json([
+                'exit_code' => 1,
+                'message' => 'Ce pseudo est déjà pris, désolé !',
+                'devMessage' => "ERROR_PSEUDO_ALREADY_EXISTS",
+            ]);
+        }
+
         if($this->createUser($user)) {
             return $this->json([
                 'exit_code' => 0,
-                'message' => 'Utilisateur '.$user->getId().' enregistré',
+                'message' => 'Utilisateur  enregistré',
                 'devMessage' => "Success : nothing to show here",
             ]);
         } else {
