@@ -66,15 +66,29 @@ class DeckController extends AbstractController
         // or you can add an argument to your action: index(EntityManagerInterface $entityManager)
 
         $entityManager = $this->getDoctrine()->getManager();
-
         $serializer = $container->get('jms_serializer');
-        $deck = $serializer->deserialize($request->getContent(), 'App\Entity\Deck', 'json');
 
+        $json = json_decode($request->getContent(), true);
+        $user = $this->getDoctrine()->getRepository(User::class)->find($json["user_id"]);   
+        if ($user != null) {
+            $deck = new Deck($json["name"], $json["description"], $user);
+        } else {
+            return $this->json([
+                'exit_code' => 1,
+                'message' => 'Utilisateur introuvable',
+                'devMessage' => "ERROR_DECK_NOT_SAVED",
+            ]);
+        }
 
         if($this->createDeck($deck)) {
+            $user->addDeck($deck);
+            $entityManager->merge($user);
+            $entityManager->flush();
+
             return $this->json([
                 'exit_code' => 0,
                 'message' => 'Deck enregistré',
+                'id' => $deck->getId(),
                 'devMessage' => "Success : nothing to show here",
             ]);
         } else {
@@ -166,6 +180,19 @@ class DeckController extends AbstractController
                 $lastDeck[0]->setName($deck->getName());
             if($deck->getDescription() != null) 
                 $lastDeck[0]->setDescription($deck->getDescription());
+            if($deck->getCardsList() != null){
+
+                foreach($deck->getCardsList() as &$card){
+                    $lastDeck[0]->removeCardsList($card);
+                }
+
+
+                foreach($deck->getCardsList() as &$card){
+                    $lastDeck[0]->addCardsList($card);
+                }
+
+            }
+                
         } else {
             return 1;
         }        

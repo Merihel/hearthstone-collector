@@ -3,12 +3,20 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 
 /**
  * @ORM\Entity(repositoryClass="App\Repository\DeckRepository")
  */
 class Deck
 {
+
+    public function __construct(String $name, String $description, User $userId) {
+        $this->setName($name);
+        $this->setDescription($description);
+        $this->setUserId($userId);
+    }
     /**
      * @ORM\Id()
      * @ORM\GeneratedValue()
