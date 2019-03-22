@@ -328,7 +328,7 @@ class UserController extends AbstractController
 
         if($this->doesMailExists($user->getMail())) {
             return $this->json([
-                'exit_code' => 1,
+                'exit_code' => 500,
                 'message' => 'Ce mail existe déjà',
                 'devMessage' => "ERROR_MAIL_ALREADY_EXISTS",
             ]);
@@ -336,7 +336,7 @@ class UserController extends AbstractController
 
         if($this->doesPseudoExists($user->getPseudo())) {
             return $this->json([
-                'exit_code' => 1,
+                'exit_code' => 500,
                 'message' => 'Ce pseudo est déjà pris, désolé !',
                 'devMessage' => "ERROR_PSEUDO_ALREADY_EXISTS",
             ]);
@@ -344,13 +344,13 @@ class UserController extends AbstractController
 
         if($this->createUser($user)) {
             return $this->json([
-                'exit_code' => 0,
+                'exit_code' => 200,
                 'message' => 'Utilisateur  enregistré',
                 'devMessage' => "Success : nothing to show here",
             ]);
         } else {
             return $this->json([
-                'exit_code' => 1,
+                'exit_code' => 500,
                 'message' => 'Erreur lors de l\'enregistrement de l\'utilisateur '.$user->getId(),
                 'devMessage' => "ERROR_USER_NOT_SAVED",
             ]);
