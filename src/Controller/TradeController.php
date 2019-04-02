@@ -9,6 +9,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use App\Entity\Card;
 use App\Entity\User;
 use App\Entity\Trade;
+use App\Controller\UserController;
 use Psr\Log\LoggerInterface;
 use JMS\Serializer\SerializationContext;
 use App\Service\HearthstoneApiService;
@@ -109,7 +110,60 @@ class TradeController extends AbstractController
         return isset($trade[0]);
     }
 
-    //TODO update le status
-
     //TODO isOkey du asker et isOk du asked
+
+
+    //TODO update le status
+    /**
+     * @Route("/trade/updateStatus/")
+     */
+    public function updateTradeStatusAction(Request $request, Container $container)
+    { 
+        $serializer = $container->get('jms_serializer');
+        $json = json_decode($request->getContent(), true);
+        if (isset($json["id"]) && isset($json["status"])) {
+            $trade = $this->getDoctrine()
+                ->getRepository(Trade::class)
+                ->find($json["id"]);
+
+            $status = $json["status"];
+            if ($status == "OK" || $status == "PENDING" || $status == "OUT") {
+                $trade->setStatus($json["status"]);
+                $em = $this->getDoctrine()->getManager();
+                $em->merge($trade);
+                $em->flush();
+
+                $status == "OK" ? $this->finishTrade($trade) : null;
+
+                return $this->json([
+                    'exit_code' => 200,
+                    'message' => 'Echange mis à jour',
+                    'devMessage' => 'OK',
+                ]); 
+            } else {
+                return $this->json([
+                    'exit_code' => 500,
+                    'message' => 'Erreur interne: status inconnu',
+                    'devMessage' => 'UNKNOWN_STATUS',
+                ]);
+            }
+        } else {
+            return $this->json([
+                'exit_code' => 500,
+                'message' => 'Erreur interne: données introuvables',
+                'devMessage' => 'DATA_NOT_FOUND_ID_OR_STATUS_UNKNOWN',
+            ]);
+        }
+    }
+
+    function finishTrade(Trade $trade) {
+        $userAsker = $trade->getUserAsker();
+        $userAsked = $trade->getUserAsked();
+        $cardAsker = $trade->getCardAsker();
+        $cardAsked = $trade->getCardAsked();
+
+        if ($this->UserController->removeCardOfUser($userAsker, $cardAsker) && $this->UserController->removeCardOfUser($userAsked, $cardAsked)) {
+            //TODO finir la suppression des cards des deux users avantde les réinserrer à l'inverse !
+        }
+    }
 }
