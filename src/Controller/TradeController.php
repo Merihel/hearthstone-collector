@@ -81,9 +81,8 @@ class TradeController extends AbstractController
         ->findBy(array('userAsked' => $id));
 
         if (isset($myTrades[0])) {
-           
             if (isset($otherTrades[0])) {
-                $allTrades = array_merge($myTrades, $otherTrades);
+                $allTrades = array_merge($myTrades, $otherTrades); //Si on a des trades en tant que "userAsked" ils s'ajoutent
                 $jsonObject = $serializer->serialize($allTrades, 'json');
                 return $this->json(json_decode($jsonObject));
             } else {

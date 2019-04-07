@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use JMS\Serializer\Annotation as Serializer;
 use JMS\Serializer\Annotation\SerializedName as SerializedName;
 
 /**
@@ -14,6 +15,8 @@ class Card
      * @ORM\Id()
      * @ORM\GeneratedValue()
      * @ORM\Column(type="integer")
+     * @SerializedName("id")
+     * @Serializer\Expose
      */
     private $id;
 
@@ -85,6 +88,13 @@ class Card
     public function getId(): ?int
     {
         return $this->id;
+    }
+
+    public function setId(int $id): self
+    {
+        $this->id = $id;
+
+        return $this;
     }
 
     public function getHsId(): ?string
