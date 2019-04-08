@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use JMS\Serializer\Annotation\SerializedName as SerializedName;
 
 /**
  * @ORM\Entity(repositoryClass="App\Repository\TradeRepository")
@@ -24,46 +25,54 @@ class Trade
     /**
      * @ORM\Id()
      * @ORM\GeneratedValue()
+     * @SerializedName("id")
      * @ORM\Column(type="integer")
      */
     private $id;
 
     /**
      * @ORM\ManyToOne(targetEntity="App\Entity\User")
+     * @SerializedName("userAsker")
      * @ORM\JoinColumn(nullable=false)
      */
     private $userAsker;
 
     /**
      * @ORM\ManyToOne(targetEntity="App\Entity\User")
+     * @SerializedName("userAsked")
      * @ORM\JoinColumn(nullable=false)
      */
     private $userAsked;
 
     /**
      * @ORM\Column(type="string", length=255, nullable=true)
+     * @SerializedName("status")
      */
     private $status;
 
     /**
      * @ORM\ManyToOne(targetEntity="App\Entity\Card")
+     * @SerializedName("cardAsker")
      * @ORM\JoinColumn(nullable=false)
      */
     private $cardAsker; // LA CARTE DE CELUI QUI DEMANDE = CELLE QU'IL PROPOSE
 
     /**
      * @ORM\ManyToOne(targetEntity="App\Entity\Card")
+     * @SerializedName("cardAsked")
      * @ORM\JoinColumn(nullable=false)
      */
     private $cardAsked; // LA CARTE VOULUE, CELLE DE L'AUTRE
 
     /**
      * @ORM\Column(type="boolean", nullable=true)
+     * @SerializedName("isAskerOk")
      */
     private $isAskerOk;
 
     /**
      * @ORM\Column(type="boolean", nullable=true)
+     * @SerializedName("isAskedOk")
      */
     private $isAskedOk;
 

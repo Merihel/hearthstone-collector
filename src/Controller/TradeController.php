@@ -3,7 +3,7 @@
 namespace App\Controller;
 
 use FOS\RestBundle\Controller\Annotations\View;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\DependencyInjection\ContainerInterface as Container;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Entity\Card;
@@ -17,7 +17,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 
-class TradeController extends AbstractController
+class TradeController extends Controller
 { 
     /**
      * @Route("/trade/new")
@@ -109,12 +109,8 @@ class TradeController extends AbstractController
         return isset($trade[0]);
     }
 
-    //TODO isOkey du asker et isOk du asked
-
-
-    //TODO update le status
     /**
-     * @Route("/trade/updateStatus/")
+     * @Route("/trade/updateStatus")
      */
     public function updateTradeStatusAction(Request $request, Container $container)
     { 
@@ -128,11 +124,22 @@ class TradeController extends AbstractController
             $status = $json["status"];
             if ($status == "OK" || $status == "PENDING" || $status == "OUT") {
                 $trade->setStatus($json["status"]);
+                $status == "OK" ? $trade->setIsAskedOk(true) : $trade->setIsAskedOk(true);
                 $em = $this->getDoctrine()->getManager();
                 $em->merge($trade);
                 $em->flush();
 
-                $status == "OK" ? $this->finishTrade($trade) : null;
+                if ($status == "OK") {
+                    $finishReturn = $this->finishTrade($trade);
+
+                    if (!$finishReturn) {
+                        return $this->json([
+                            'exit_code' => 500,
+                            'message' => 'Erreur, impossible d\'échanger les cartes des utilisateurs',
+                            'devMessage' => 'ERROR_CANT_SWAP_CARDS',
+                        ]); 
+                    }
+                }
 
                 return $this->json([
                     'exit_code' => 200,
@@ -160,9 +167,22 @@ class TradeController extends AbstractController
         $userAsked = $trade->getUserAsked();
         $cardAsker = $trade->getCardAsker();
         $cardAsked = $trade->getCardAsked();
+        
+        $userController = $this->get('user_controller_service');
 
-        if ($this->UserController->removeCardOfUser($userAsker, $cardAsker) && $this->UserController->removeCardOfUser($userAsked, $cardAsked)) {
-            //TODO finir la suppression des cards des deux users avantde les réinserrer à l'inverse !
+        if ($userController->removeCardOfUser($userAsker, $cardAsker) &&  $userController->removeCardOfUser($userAsked, $cardAsked)) {
+            $em = $this->getDoctrine()->getManager();
+            $userAsker->addCard($cardAsked);
+            $em->merge($userAsker);
+            $em->flush();
+
+            $userAsked->addCard($cardAsker);
+            $em->merge($userAsked);
+            $em->flush();
+
+            return true;
+        } else {
+            return false;
         }
     }
 }
