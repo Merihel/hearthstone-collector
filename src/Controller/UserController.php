@@ -569,4 +569,22 @@ class UserController extends AbstractController
             ]);
         }
     }
+
+    public function removeCardOfUser(User $user, Card $card) {
+        if (!$user->getCards()->contains($card)) {
+            return false;
+        }
+
+        foreach ($user->getCards() as $key => $value) {
+            if ($card == $value) {
+                unset($user->getCards()[$key]);
+            }
+        }
+
+        $em = $this->getDoctrine()->getManager();
+        $em->merge($user);
+        $em->flush();
+
+        return true;
+    }
 }
