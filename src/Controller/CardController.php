@@ -15,6 +15,7 @@ use Symfony\Component\HttpFoundation\Request;
 
 class CardController extends AbstractController
 {
+    //Selection de carte par son ID. Les données sont récupérées depuis l'API Hearthstone originale mais seulement si la carte est dans notre base de données.
     /**
      * @Route("/card/select/{id}", name="card")
      */
@@ -38,10 +39,11 @@ class CardController extends AbstractController
     }
     
     /*
+    * Retourne une liste de cartes depuis l'API Hearthstone originale
     * 24 cartes = 30 secondes d'appel API ! Il faut changer et enegistrer les cartes sur l'app....
     */
-    
-    /**
+
+    /** 
      * @Route("/card/select-list")
      */
     public function getCardListAction(Request $request, LoggerInterface $logger) 
@@ -50,12 +52,6 @@ class CardController extends AbstractController
         $json = json_decode($request->request->get("json"), true);
         $jsonValues = $json["json"];
         $hearthstoneApiService = new HearthstoneApiService();
-        
-        /*
-        echo '<pre>'; 
-        var_dump($json); 
-        echo '</pre>';
-        */
         
         $imgArray = [];
         $html = "";
@@ -67,6 +63,7 @@ class CardController extends AbstractController
         return new Response($html);
     }
     
+    //Retourne toutes les cartesde l'utilisateur (peu ou pas utilisé car cartes dans l'user)
     /**
      * @Route("/card/select-by-user/{id}")
      */
@@ -102,6 +99,7 @@ class CardController extends AbstractController
         return $cardIds;
     }
 
+    //Permet d'importer en BDD une carte de l'API Hearthstone originale, en reseignant le "Hearthstone ID" de la carte
     /**
      * @Route("/card/import/{hsId}")
      **/
@@ -159,6 +157,7 @@ class CardController extends AbstractController
         
     }
     
+    //permet de créer une nouvelle carte en bdd (peu utilisé on utilise plutôt l'import directement)
     /**
      * @Route("/card/new")
      */

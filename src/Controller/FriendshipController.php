@@ -22,6 +22,7 @@ use Symfony\Component\HttpFoundation\Request;
 */
 class FriendshipController extends AbstractController
 {
+    //Créé une nouvelle amitié entre deux users
     /**
      * @Route("/friendship/new")
      */
@@ -89,6 +90,7 @@ class FriendshipController extends AbstractController
         }
     }
 
+    //permet de savoir si l'amitié existe déjà d'uncôté ou de l'autre
     public function friendshipAlreadyExists(Friendship $friendship) {
         $test1Passed = false;
         $test2Passed = false;
@@ -121,6 +123,7 @@ class FriendshipController extends AbstractController
         }
     }
 
+    //Récupérer les amitiés d'un utilisateur
     /**
      * @Route("/friendship/selectByUser/{id}")
      */
@@ -161,6 +164,7 @@ class FriendshipController extends AbstractController
         return $this->json(json_decode($serializer->serialize($finalArray, 'json')));
     }
 
+    //Récupérer toutes les amitiés "en cours" pour un utilisateur
     /**
      * @Route("/friendship/selectByUserPending/{id}")
      */
@@ -201,7 +205,7 @@ class FriendshipController extends AbstractController
         return $this->json(json_decode($serializer->serialize($finalArray, 'json')));
     }
     
-
+    //permet d'inverser les users afin de toujours être dans la même position pour Android
     public function reverseUsers(Friendship $friendship) {
         $usr1 = $friendship->getUser1();
         $usr2 = $friendship->getUser2();
@@ -210,6 +214,7 @@ class FriendshipController extends AbstractController
         return $friendship;
     }
 
+    //Supprime une amitié
     /**
      * @Route("/friendship/delete/{id}")
      */
@@ -238,6 +243,7 @@ class FriendshipController extends AbstractController
         }
     }
 
+    //Accepte une amitié
     /**
      * @Route("/friendship/accept/{id}")
      */

@@ -18,12 +18,13 @@ use JMS\Serializer\SerializationContext;
 
 class UserController extends AbstractController
 {
+    //Récupérer un user par son id
     /**
      * @Route("/user/select/{id}")
      */
     public function getUserAction($id, Container $container)
     {
-        //Container possède les services, not celui de JMS
+        //Container possède les services, not. celui de JMS
         //Je créé un objet JMSSerializer pour la sérialisation/déserialisation
         $serializer = $container->get('jms_serializer');
 
@@ -44,6 +45,7 @@ class UserController extends AbstractController
         }
     }
 
+    //Récupérer un user par son mail
     /**
      * @Route("/user/select-by-mail/{mail}")
      */
@@ -70,6 +72,7 @@ class UserController extends AbstractController
         }
     }
 
+    //Récupérer avec cartes : n'est plus utilisé car les cartes sont directement chez l'utilisateur
     /**
      * @Route("/user/select-with-cards/{id}", name="user")
      */
@@ -97,6 +100,7 @@ class UserController extends AbstractController
 
     //ROUTES DE LOGIN
 
+    //permet de valider le login de l'utilisateur
     /**
      * @Route("/user/login")
      */
@@ -162,6 +166,7 @@ class UserController extends AbstractController
 
     //FONCTION DE CHECK DE MAIL, EN ROUTE ET EN FONCTION UTIL
 
+    //Permet de savoir si le mail existe en BDD et s'il est disponible
     /**
      * @Route("/user/check-mail/{mail}")
      */
@@ -182,6 +187,7 @@ class UserController extends AbstractController
         }
     }
 
+    //Check si le mail existe bien
     public function doesMailExists($mail) {
         $user = $this->getDoctrine()
             ->getRepository(User::class)
@@ -194,12 +200,14 @@ class UserController extends AbstractController
         }
     }
 
+    //Permet de saoir si c'est bien un mail
     function checkEmailStruct($email) {
         return (strpos($email, '@'));
      }
 
     //FONCTION DE CHECK DE PSEUDO, EN ROUTE ET EN FONCTION UTIL
 
+    //Permet de vérifier si le pseudo existe/est dupliqué
     /**
      * @Route("/user/check-pseudo/{pseudo}")
      */
@@ -220,6 +228,7 @@ class UserController extends AbstractController
         }
     }
 
+    //Permet de savoir si le pseudo existe déjà
     public function doesPseudoExists($pseudo) {
         $user = $this->getDoctrine()
             ->getRepository(User::class)
@@ -237,6 +246,7 @@ class UserController extends AbstractController
         return $user->getPassword() == $password ? true : false;
     }
 
+    //Synchronisation étape 1 des réseaux sociaux
     /**
      * @Route("/user/sync1")
      */
@@ -270,6 +280,7 @@ class UserController extends AbstractController
         }
     }
 
+    //Synchronisation étape 2 des réseaux sociaux
     /**
      * @Route("/user/sync2/{arg}")
      */
@@ -315,6 +326,7 @@ class UserController extends AbstractController
 
     //CREATION D'UN NOUVEL USER
 
+    //Création d'un nouvel user
     /**
      * @Route("/user/new")
      */
@@ -357,6 +369,7 @@ class UserController extends AbstractController
         }
     }
 
+    //Fonction de persistence du nouvel user
     public function createUser($user) {
         if($user->getCoins() == null || $user->getCoins() == 0) {
             $user->setCoins(75);
@@ -381,6 +394,7 @@ class UserController extends AbstractController
 
     //Attention sur le update : les champs manquant seront null ou vides dans la base de données !
 
+    //Permet de update l'user
     /**
      * @Route("/user/update")
      */
@@ -432,6 +446,7 @@ class UserController extends AbstractController
 
     }
 
+    //Persistence de l'update de l'user
     public function updateUser($user) {
 
         $em = $this->getDoctrine()->getManager();
@@ -471,6 +486,7 @@ class UserController extends AbstractController
         }
     }
 
+    //Permet d'affecter une carte à un user
     /**
      * @Route("/user/set-card")
      */
@@ -520,7 +536,7 @@ class UserController extends AbstractController
         }
     }
 
-
+    //Permet d'affecter un deck à un user
     /**
      * @Route("/user/set-deck")
      */
@@ -570,6 +586,7 @@ class UserController extends AbstractController
         }
     }
 
+    //Permet de supprimer la carte d'un user. Utilisé à la fin d'un trade avant de 'swap" les cartes des users
     public function removeCardOfUser(User $user, Card $card) {
         if (!$user->getCards()->contains($card)) {
             return false;

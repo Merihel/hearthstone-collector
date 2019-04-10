@@ -16,6 +16,7 @@ use Symfony\Component\HttpFoundation\Request;
 
 class DeckController extends AbstractController
 {
+    //Récupérer un deck par son id
     /**
      * @Route("/deck/select/{id}", name="deck")
      */
@@ -37,6 +38,7 @@ class DeckController extends AbstractController
         return $this->json(json_decode($jsonObject));
     }
 
+    //Récupérer tous les decks d'un utilisateur
     /**
      * @Route("/deck/select-by-user/{id}")
      */
@@ -57,6 +59,7 @@ class DeckController extends AbstractController
         return $this->json(json_decode($serializer->serialize($user->getDecks(), 'json')));
     }
 
+    //Créer un deck, il faut renseigner par JSON tous leschamps obligatoires, JMS serialisera le JSON en objet Deck
     /**
      * @Route("/deck/new")
      */
@@ -100,6 +103,7 @@ class DeckController extends AbstractController
         }
     }
 
+    //La fonction pour persist un deck
     public function createDeck($deck) {
         $em = $this->getDoctrine()->getManager();
         $em->persist($deck);
@@ -112,7 +116,7 @@ class DeckController extends AbstractController
         }
     }
 
-
+    //Met à jour un deck, toujours la serialisation par JMS
     /**
     * @Route("/deck/update")
     */
@@ -164,9 +168,7 @@ class DeckController extends AbstractController
 
     }
 
-
-
-
+    //Fonction d'update de deck puis persistence en BDD
     public function updateDeck($deck) {
 
         $em = $this->getDoctrine()->getManager();
@@ -214,7 +216,7 @@ class DeckController extends AbstractController
         }
     }
 
-
+    //Suppression d'un deck
     /**
     * @Route("/deck/delete/{id}")
     */

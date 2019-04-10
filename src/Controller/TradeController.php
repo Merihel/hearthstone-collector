@@ -19,6 +19,7 @@ use Symfony\Component\HttpFoundation\Request;
 
 class TradeController extends Controller
 { 
+    //Permet de créer un nouvel échange
     /**
      * @Route("/trade/new")
      */
@@ -66,6 +67,7 @@ class TradeController extends Controller
         }
     }
 
+    //permet de sélectionner un échange par son id
     /**
      * @Route("/trade/select/{id}")
      */
@@ -101,6 +103,7 @@ class TradeController extends Controller
         }
     }
     
+    //permet de savoir si une carte est déjà promise en échange, retourne true ou false
     public function isCardAlreadyPromised(Card $card) { //check si la card est déjà promise à quelqu'un donc de type "cardAsker" et check sur trades en cours (pas de check sur out et ok car user l'a forcément re-obtenue entre temps pour créer un trade, donc c'est bon)
         $trade = $this->getDoctrine()
         ->getRepository(Trade::class)
@@ -109,6 +112,7 @@ class TradeController extends Controller
         return isset($trade[0]);
     }
 
+    //Mettre àjour le statut d'un échange, entre "OK" (accepté), "OUT" (refusé) et "PENDING" (en cours). S'il passe à OK on valide automatiquement le trade en échangeant les cartes des users.
     /**
      * @Route("/trade/updateStatus")
      */
@@ -162,6 +166,7 @@ class TradeController extends Controller
         }
     }
 
+    //Fonction qui termine le trade et qui échange les cartes en utilisant le UserController en tant que service
     function finishTrade(Trade $trade) {
         $userAsker = $trade->getUserAsker();
         $userAsked = $trade->getUserAsked();
